@@ -51,8 +51,7 @@ const TOP_UP_ADDRESS_CARD: InfoCardConfig = {
 
 const TWO_STEP_SHIELDING_CARD: InfoCardConfig = {
   title: 'Two-step Shielding',
-  text: 'Locking Dash broadcasts an L1 transaction, waits for a Chain Lock (a few minutes) and then shields the credits into your shielded balance or the shielded address you enter. The L1 lock amount stays publicly visible.',
-  duration: CROSS_LAYER_DURATION
+  text: 'Dash is locked on Dash Core, then the credits are sent to your shielded balance or the shielded address you enter. The locked amount stays visible on Dash Core. Completion time depends on the network.'
 }
 
 const CROSS_CHAIN_WITHDRAWAL_CARD: InfoCardConfig = {
