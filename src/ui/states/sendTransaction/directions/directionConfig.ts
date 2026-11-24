@@ -1,4 +1,3 @@
-import { PROVING_NOTE } from '../../../constants'
 import type { Direction, TransferMode } from '../types'
 
 // Placeholder in info card texts replaced with the estimated fee in Dash.
@@ -60,11 +59,6 @@ const CROSS_CHAIN_WITHDRAWAL_CARD: InfoCardConfig = {
   title: 'Cross-chain withdrawal',
   text: `Withdrawing to Core costs a ${FEE_PLACEHOLDER} network fee.`,
   duration: CROSS_LAYER_DURATION
-}
-
-const SHIELDING_CARD: InfoCardConfig = {
-  title: 'Shielding',
-  text: PROVING_NOTE
 }
 
 const SINGLE_HASH = {
@@ -153,7 +147,6 @@ export const DIRECTION_DETAILS: Partial<Record<Direction, DirectionDetails>> = {
   },
   'platformAddress->shielded': {
     ...SINGLE_HASH,
-    infoCard: SHIELDING_CARD,
     confirmLabel: 'Shield',
     hasProgress: true,
     successMessage: SENT_TO_OWN_SHIELDED,
