@@ -1,10 +1,21 @@
 import React from 'react'
+import { hex } from '@scure/base'
 import { Text, Identifier } from 'dash-ui-kit/react'
 import { TransactionDetailsCard } from '../../../../components/transactions'
 import { BatchActions, type BatchActionCode } from '../../../../../enums/BatchActions'
 
 interface DocumentCreateDetailsProps {
   transition: any
+}
+
+function formatDocumentValue (_key: string, value: unknown): unknown {
+  if (value instanceof Uint8Array) {
+    return hex.encode(value)
+  }
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+  return value
 }
 
 export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProps): React.JSX.Element {
@@ -67,7 +78,7 @@ export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProp
         <TransactionDetailsCard title='Data'>
           <div className='relative max-h-[200px] overflow-auto'>
             <pre className='text-dash-primary-dark-blue font-dash-grotesque text-sm font-medium opacity-75 whitespace-pre-wrap break-all'>
-              {JSON.stringify(transition.data, null, 2)}
+              {JSON.stringify(transition.data, formatDocumentValue, 2)}
             </pre>
           </div>
         </TransactionDetailsCard>
