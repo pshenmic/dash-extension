@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams, useOutletContext, useLocation } from 'react-router-dom'
 import { base64 as base64Decoder } from '@scure/base'
-import { Accordion, Button, Text } from 'dash-ui-kit/react'
+import { Accordion, Button, Identifier } from 'dash-ui-kit/react'
 import { GetStateTransitionResponse } from '../../../types/messages/response/GetStateTransitionResponse'
 import { Banner, SummaryRow } from '../../components/cards'
 import { PasswordField } from '../../components/forms'
@@ -349,8 +349,8 @@ function ApproveTransactionState (): React.JSX.Element {
   return (
     <div className='screen-content gap-4'>
       <TitleBlock
+        variant='screen'
         title='Sign Transaction'
-        containerClassName='mb-0'
         badge={typeTitle != null ? <TransactionTypeChip title={typeTitle} /> : null}
       />
 
@@ -368,7 +368,7 @@ function ApproveTransactionState (): React.JSX.Element {
           {stateTransitionOrigin != null && (
             <SummaryRow
               label='Requested by:'
-              value={<Text size='xs' weight='medium' className='break-all'>{stateTransitionOrigin}</Text>}
+              value={<Identifier size='xs' linesAdjustment={false} className='min-w-0'>{stateTransitionOrigin}</Identifier>}
             />
           )}
 
@@ -376,7 +376,7 @@ function ApproveTransactionState (): React.JSX.Element {
             <SummaryRow
               label='Sign as:'
               value={currentIdentity != null
-                ? <IdentityValue identifier={currentIdentity} />
+                ? <IdentityValue identifier={currentIdentity} linesAdjustment />
                 : '-'}
             />
           )}

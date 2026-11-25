@@ -31,7 +31,6 @@ export function Stage1SavePhrase ({ mnemonic, wordCount, onWordCountChange, onCo
         <TitleBlock
           title='Save your Seed Phrase'
           description="This recovery phrase is your wallet's only backup. If you lose it, no one can help you access your funds. Your recovery phrase is safest when written on paper and stored in a secure place."
-          titleClassName='font-extrabold text-gray-900 leading-tight'
         />
       </div>
 
