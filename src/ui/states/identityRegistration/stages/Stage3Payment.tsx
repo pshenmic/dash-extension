@@ -1,133 +1,66 @@
-import React, { useState, useEffect } from 'react'
-import { Button, Input, Text, CopyButton, ProgressStepBar } from 'dash-ui-kit/react'
+import React from 'react'
+import { Button, CopyButton, Identifier, Input, ProgressStepBar } from 'dash-ui-kit/react'
+import { Banner, SummaryRow } from '../../../components/cards'
 import { TitleBlock } from '../../../components/layout/TitleBlock'
 import { FieldLabel } from '../../../components/typography'
-import { QRCodeSVG } from 'qrcode.react'
 
 interface Stage3PaymentProps {
   stage: number
-  isLoadingAddress: boolean
-  fundingAddress: string | null
-  addressError: string | null
-  showManualEntry: boolean
+  fundingAddress: string
   transactionHash: string
-  onShowManualEntry: () => void
+  error?: string | null
+  isCheckingPassword?: boolean
   onTransactionHashChange: (value: string) => void
   onConfirmPayment: () => void
 }
 
-export function Stage3Payment ({
-  stage,
-  isLoadingAddress,
-  fundingAddress,
-  addressError,
-  showManualEntry,
-  transactionHash,
-  onShowManualEntry,
-  onTransactionHashChange,
-  onConfirmPayment
-}: Stage3PaymentProps): React.JSX.Element {
-  const [paymentReady, setPaymentReady] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setPaymentReady(true), 10000)
-    return () => clearTimeout(timer)
-  }, [])
+export function Stage3Payment ({ stage, fundingAddress, transactionHash, error, isCheckingPassword = false, onTransactionHashChange, onConfirmPayment }: Stage3PaymentProps): React.JSX.Element {
+  const canConfirm = !isCheckingPassword && /^[0-9a-f]{64}$/i.test(transactionHash.trim())
 
   return (
-    <div className='flex flex-col h-full'>
+    <form
+      className='flex flex-1 flex-col gap-4'
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (canConfirm) onConfirmPayment()
+      }}
+    >
       <TitleBlock
-        title='Waiting for Payment'
-        description='Send any desired amount (over 0.1 Dash) to the address below. Your private keys are stored securely and never leave this device.'
-        logoSize='3rem'
-        showLogo
-        containerClassName='mb-0'
+        variant='screen'
+        title='Find your earlier payment'
+        description='Enter the transaction ID for the transfer you already made to this address.'
       />
 
-      <div className='mt-6'>
-        <div className='bg-dash-primary-dark-blue/[0.04] rounded-3xl p-6 flex gap-6 items-center'>
-          <div className='flex-shrink-0'>
-            {isLoadingAddress
-              ? (
-                <div className='w-[100px] h-[100px] flex items-center justify-center'>
-                  <Text size='xs' dim>Loading...</Text>
-                </div>
-                )
-              : (
-                <QRCodeSVG
-                  value={fundingAddress ?? ''}
-                  fgColor='#4C7EFF'
-                  bgColor='transparent'
-                  size={100}
-                />
-                )}
-          </div>
-          <div className='flex flex-col gap-1 flex-1 min-w-0'>
-            {addressError != null
-              ? (
-                <Text size='sm' className='text-red-500 break-all'>{addressError}</Text>
-                )
-              : (
-                <>
-                  <div className='flex items-center gap-2'>
-                    <Text
-                      size='sm'
-                      weight='medium'
-                      className='text-dash-primary-dark-blue leading-[1.366em] tracking-[-0.01em] break-all'
-                    >
-                      {isLoadingAddress ? 'Generating address…' : (fundingAddress ?? '')}
-                    </Text>
-                    {fundingAddress != null && !isLoadingAddress && (
-                      <div className='flex-shrink-0'>
-                        <CopyButton text={fundingAddress} />
-                      </div>
-                    )}
-                  </div>
-                  <Text className='text-xs' dim>
-                    You can send any amount convenient for you (over 0.1 Dash). We are ready to accept a transfer at any time!
-                  </Text>
-                </>
-                )}
-          </div>
-        </div>
-      </div>
+      <SummaryRow
+        label='Paid to'
+        value={
+          <>
+            <Identifier highlight='both' className='min-w-0'>{fundingAddress}</Identifier>
+            <CopyButton text={fundingAddress} aria-label='Copy previous payment address' />
+          </>
+        }
+      />
 
-      <div className={`flex flex-col gap-4 ${paymentReady ? 'mt-6' : 'mt-auto'}`}>
-        {paymentReady && (
-          !showManualEntry
-            ? (
-              <Button
-                colorScheme='lightBlue'
-                className='w-full'
-                onClick={onShowManualEntry}
-              >
-                I made a payment
-              </Button>
-              )
-            : (
-              <div className='flex flex-col gap-2'>
-                <FieldLabel>Transaction ID (txid)</FieldLabel>
-                <Input
-                  placeholder='64-character transaction hash'
-                  value={transactionHash}
-                  onChange={(e) => onTransactionHashChange(e.target.value)}
-                />
-                <Button
-                  colorScheme='brand'
-                  className='w-full'
-                  disabled={
-                    transactionHash.trim().length !== 64 ||
-                    fundingAddress == null
-                  }
-                  onClick={onConfirmPayment}
-                >
-                  Confirm
-                </Button>
-              </div>
-              )
-        )}
+      <div className='flex flex-col gap-2'>
+        <FieldLabel>Transaction ID</FieldLabel>
+        <Input
+          aria-label='Transaction ID'
+          placeholder='64-character transaction ID'
+          value={transactionHash}
+          disabled={isCheckingPassword}
+          onChange={(event) => onTransactionHashChange(event.target.value)}
+          size='xl'
+          variant='outlined'
+        />
+      </div>
+      {error != null && <div role='alert'><Banner variant='error' message={error} /></div>}
+
+      <div className='mt-auto flex flex-col gap-3'>
+        <Button type='submit' colorScheme='brand' size='xl' className='w-full' disabled={!canConfirm}>
+          {isCheckingPassword ? 'Checking password…' : 'Confirm Payment'}
+        </Button>
         <ProgressStepBar totalSteps={5} currentStep={stage} />
       </div>
-    </div>
+    </form>
   )
 }

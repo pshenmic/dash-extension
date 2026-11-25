@@ -9,20 +9,14 @@ interface Stage1IntroProps {
 
 export function Stage1Intro ({ stage, onNext }: Stage1IntroProps): React.JSX.Element {
   return (
-    <div className='flex flex-col h-full'>
-      <div className='pt-[176px]'>
-        <TitleBlock
-          title='Identity Registration'
-          description='Lets start the identity creation process. A small fee will be taken for the registration. To continue press next.'
-          logoSize='3rem'
-          showLogo
-          containerClassName='mb-0'
-        />
-      </div>
+    <div className='flex flex-1 flex-col gap-4'>
+      <TitleBlock
+        variant='screen'
+        title='Identity Registration'
+        description='Create an identity on Dash Platform using DASH from your Core wallet.'
+      />
 
-      <div className='flex-1' />
-
-      <div className='flex flex-col gap-4'>
+      <div className='mt-auto flex flex-col gap-3'>
         <Button
           colorScheme='brand'
           className='w-full'

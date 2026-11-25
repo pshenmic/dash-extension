@@ -10,11 +10,8 @@ interface RegistrationErrorProps {
 export function RegistrationError ({ stage, registrationError, onReturnBack }: RegistrationErrorProps): React.JSX.Element {
   return (
     <ErrorScreen
-      title={
-        <>
-          <span className='font-normal'>There Was<br />an</span> Error With<br />Registration
-        </>
-      }
+      titleVariant='screen'
+      title='Registration failed'
       error={registrationError}
       defaultError='An unexpected error occurred while registering identity.'
       totalSteps={5}

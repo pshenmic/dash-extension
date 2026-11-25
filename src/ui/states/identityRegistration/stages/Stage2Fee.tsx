@@ -8,6 +8,7 @@ interface Stage2FeeProps {
   coinImage: string | undefined
   password: string
   passwordError: string | null
+  isCheckingPassword?: boolean
   onPasswordChange: (value: string) => void
   onProceedToPayment: () => void
 }
@@ -17,17 +18,24 @@ export function Stage2Fee ({
   coinImage,
   password,
   passwordError,
+  isCheckingPassword = false,
   onPasswordChange,
   onProceedToPayment
 }: Stage2FeeProps): React.JSX.Element {
+  const canContinue = !isCheckingPassword && password.trim() !== ''
+
   return (
-    <div className='flex flex-col h-full'>
+    <form
+      className='flex flex-1 flex-col gap-4'
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (canContinue) onProceedToPayment()
+      }}
+    >
       <TitleBlock
-        title='Registration Fee'
-        description='Identity registration on Dash Platform requires a small network fee. This one-time payment covers the cost of storing your identity on the blockchain.'
-        logoSize='3rem'
-        showLogo
-        containerClassName='!mb-0'
+        variant='screen'
+        title='Continue Registration'
+        description='Unlock your wallet to continue using the DASH you previously sent.'
       />
 
       <div className='flex-1 flex items-center justify-center relative'>
@@ -49,6 +57,7 @@ export function Stage2Fee ({
             type='password'
             placeholder='Enter your wallet password'
             value={password}
+            disabled={isCheckingPassword}
             onChange={(e) => {
               onPasswordChange(e.target.value)
             }}
@@ -59,14 +68,15 @@ export function Stage2Fee ({
           )}
         </div>
         <Button
+          type='submit'
           colorScheme='brand'
           className='w-full'
-          onClick={onProceedToPayment}
+          disabled={!canContinue}
         >
-          Continue To Payment
+          {isCheckingPassword ? 'Checking password…' : 'Continue'}
         </Button>
         <ProgressStepBar totalSteps={5} currentStep={stage} />
       </div>
-    </div>
+    </form>
   )
 }
