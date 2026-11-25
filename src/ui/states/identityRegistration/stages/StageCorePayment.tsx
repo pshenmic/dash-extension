@@ -54,8 +54,8 @@ export function StageCorePayment ({
   return (
     <form
       className='flex flex-1 flex-col gap-4'
-      onSubmit={(event) => {
-        event.preventDefault()
+      onSubmit={e => {
+        e.preventDefault()
         if (canPay && !isLoading && !isCheckingPassword && onFundCore == null) onConfirm()
       }}
     >

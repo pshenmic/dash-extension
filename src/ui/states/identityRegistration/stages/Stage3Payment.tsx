@@ -20,8 +20,8 @@ export function Stage3Payment ({ stage, fundingAddress, transactionHash, error, 
   return (
     <form
       className='flex flex-1 flex-col gap-4'
-      onSubmit={(event) => {
-        event.preventDefault()
+      onSubmit={e => {
+        e.preventDefault()
         if (canConfirm) onConfirmPayment()
       }}
     >
