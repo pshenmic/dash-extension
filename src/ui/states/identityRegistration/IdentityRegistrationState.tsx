@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Navigate, useNavigate, useSearchParams, useOutletContext } from 'react-router-dom'
-import { MIN_FEE_RELAY, TXID_HEX_LENGTH } from '../../../constants'
+import { MIN_FEE_RELAY, MIN_REGISTRATION_DUFFS, TXID_PATTERN } from '../../../constants'
 import { CORE_DASH_DECIMALS, formatDashAmount, isDashInputAllowed, parseDashAmount } from '../../../utils'
 import type { EstimateCoreTransferResponse } from '../../../types/messages/response/EstimateCoreTransferResponse'
 import type { PendingAssetLock } from '../../../types/messages/response/ListPendingAssetLocksResponse'
@@ -24,9 +24,7 @@ interface RegistrationPayments {
   legacyAddress: string | null
 }
 
-const MIN_REGISTRATION_DUFFS = 10_000_000n
 const DEFAULT_AMOUNT = formatDashAmount(MIN_REGISTRATION_DUFFS, CORE_DASH_DECIMALS)
-const TXID_PATTERN = new RegExp(`^[a-f0-9]{${TXID_HEX_LENGTH}}$`, 'i')
 
 interface RegistrationQuote {
   key: string

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Button, CopyButton, Identifier, Input, ProgressStepBar } from 'dash-ui-kit/react'
+import { TXID_PATTERN } from '../../../../constants'
 import { Banner, SummaryRow } from '../../../components/cards'
 import { TitleBlock } from '../../../components/layout/TitleBlock'
 import { FieldLabel } from '../../../components/typography'
@@ -15,7 +16,7 @@ interface Stage3PaymentProps {
 }
 
 export function Stage3Payment ({ stage, fundingAddress, transactionHash, error, isCheckingPassword = false, onTransactionHashChange, onConfirmPayment }: Stage3PaymentProps): React.JSX.Element {
-  const canConfirm = !isCheckingPassword && /^[0-9a-f]{64}$/i.test(transactionHash.trim())
+  const canConfirm = !isCheckingPassword && TXID_PATTERN.test(transactionHash.trim())
 
   return (
     <form
