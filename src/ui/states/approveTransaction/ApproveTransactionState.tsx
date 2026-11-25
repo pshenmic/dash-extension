@@ -349,8 +349,8 @@ function ApproveTransactionState (): React.JSX.Element {
   return (
     <div className='screen-content gap-4'>
       <TitleBlock
-        variant='screen'
         title='Sign Transaction'
+        containerClassName='mb-0'
         badge={typeTitle != null ? <TransactionTypeChip title={typeTitle} /> : null}
       />
 
