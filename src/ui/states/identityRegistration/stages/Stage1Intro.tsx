@@ -13,7 +13,7 @@ export function Stage1Intro ({ stage, onNext }: Stage1IntroProps): React.JSX.Ele
       <TitleBlock
         variant='screen'
         title='Identity Registration'
-        description='Create an identity on Dash Platform using DASH from your Core wallet.'
+        description='Create an identity on Dash Platform using Dash from your Core wallet.'
       />
 
       <div className='flex flex-col gap-3'>

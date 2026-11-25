@@ -35,7 +35,7 @@ export function Stage2Fee ({
       <TitleBlock
         variant='screen'
         title='Continue Registration'
-        description='Unlock your wallet to continue using the DASH you previously sent.'
+        description='Unlock your wallet to continue using the Dash you previously sent.'
       />
 
       <div className='flex-1 flex items-center justify-center relative'>

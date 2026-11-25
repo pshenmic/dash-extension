@@ -94,10 +94,10 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
     quote?.error?.includes('This wallet has no unspent Core outputs to spend') === true
   const isFeeLoading = quoteKey != null && quote == null
   const amountError = amountDuffs != null && !validAmount
-    ? `Minimum amount is ${DEFAULT_AMOUNT} DASH.`
+    ? `Minimum amount is ${DEFAULT_AMOUNT} Dash.`
     : null
   const paymentError = error ?? payments.error ?? balanceError ?? receiveAddress.error ?? amountError ?? (
-    insufficient ? 'Your Core balance cannot cover the amount and transaction fee.' : quote?.error ?? null
+    insufficient ? null : quote?.error ?? null
   )
 
   const refreshPayments = useCallback((): void => {

@@ -13,7 +13,7 @@ interface Stage5SuccessProps {
 
 export function Stage5Success ({ stage, identity, identityId, onDone }: Stage5SuccessProps): React.JSX.Element {
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-1 flex-col gap-4'>
       <TitleBlock
         variant='screen'
         title='Identity registered'
@@ -27,7 +27,7 @@ export function Stage5Success ({ stage, identity, identityId, onDone }: Stage5Su
         <Identifier avatar highlight='both' middleEllipsis edgeChars={8}>{identityId}</Identifier>
       )}
 
-      <div className='flex flex-col gap-3'>
+      <div className='mt-auto flex flex-col gap-3'>
         <Button
           colorScheme='brand'
           className='w-full'
