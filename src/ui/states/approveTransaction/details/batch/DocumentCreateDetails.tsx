@@ -24,7 +24,7 @@ export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProp
       {/* Data Contract Identifier */}
       {transition.dataContractId != null && (
         <TransactionDetailsCard title='Data Contract Identifier'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier size='xs' avatar copyButton linesAdjustment className='[&>button]:ml-auto'>
             {transition.dataContractId}
           </Identifier>
         </TransactionDetailsCard>
@@ -51,7 +51,7 @@ export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProp
       {/* Document Identifier */}
       {transition.id != null && (
         <TransactionDetailsCard title='Document Identifier'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier size='xs' avatar copyButton linesAdjustment={false}>
             {transition.id}
           </Identifier>
         </TransactionDetailsCard>
