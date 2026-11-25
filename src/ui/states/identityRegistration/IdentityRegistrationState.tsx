@@ -26,7 +26,7 @@ interface RegistrationPayments {
 
 const DEFAULT_AMOUNT = formatDashAmount(MIN_REGISTRATION_DUFFS, CORE_DASH_DECIMALS)
 
-interface RegistrationQuote {
+interface RegistrationFeeEstimateResult {
   key: string
   estimate: EstimateCoreTransferResponse | null
   error: string | null
@@ -74,28 +74,28 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
   const checkCore = isPaymentStage && !payments.loading && !useLegacyPayment && !continuing && currentWallet != null
   const { balance, loading: balanceLoading, error: balanceError, reload: reloadBalance } = useCoreBalance(currentWallet, checkCore)
   const [receiveAddress, loadReceiveAddress] = useAsyncState<string>()
-  const [fee, loadFee] = useAsyncState<RegistrationQuote>()
+  const [feeEstimateState, loadFeeEstimate] = useAsyncState<RegistrationFeeEstimateResult>()
   const [feeRevision, setFeeRevision] = useState(0)
 
   const amountDuffs = parseDashAmount(amount, CORE_DASH_DECIMALS)
   const balanceDuffs = balance == null ? null : BigInt(balance.balance)
   const validAmount = amountDuffs != null && amountDuffs >= MIN_REGISTRATION_DUFFS
-  const quoteKey = checkCore && stage === 2 && validAmount && receiveAddress.data != null &&
+  const feeEstimateKey = checkCore && stage === 2 && validAmount && receiveAddress.data != null &&
     balanceDuffs != null && amountDuffs < balanceDuffs
     ? `${amountDuffs}:${receiveAddress.data}:${balanceDuffs}:${feeRevision}`
     : null
-  const quote = fee.data?.key === quoteKey ? fee.data : null
-  const estimate = quote?.estimate ?? null
+  const feeEstimateResult = feeEstimateState.data?.key === feeEstimateKey ? feeEstimateState.data : null
+  const feeEstimate = feeEstimateResult?.estimate ?? null
   const insufficient = (balanceDuffs != null && amountDuffs != null && amountDuffs >= balanceDuffs) ||
-    (estimate != null && balanceDuffs != null && BigInt(estimate.totalCostDuffs) > balanceDuffs) ||
-    quote?.error?.includes('Insufficient funds:') === true ||
-    quote?.error?.includes('This wallet has no unspent Core outputs to spend') === true
-  const isFeeLoading = quoteKey != null && quote == null
+    (feeEstimate != null && balanceDuffs != null && BigInt(feeEstimate.totalCostDuffs) > balanceDuffs) ||
+    feeEstimateResult?.error?.includes('Insufficient funds:') === true ||
+    feeEstimateResult?.error?.includes('This wallet has no unspent Core outputs to spend') === true
+  const isFeeLoading = feeEstimateKey != null && feeEstimateResult == null
   const amountError = amountDuffs != null && !validAmount
     ? `Minimum amount is ${DEFAULT_AMOUNT} Dash.`
     : null
   const paymentError = error ?? payments.error ?? balanceError ?? receiveAddress.error ?? amountError ?? (
-    insufficient ? null : quote?.error ?? null
+    insufficient ? null : feeEstimateResult?.error ?? null
   )
 
   const refreshPayments = useCallback((): void => {
@@ -132,20 +132,20 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
   }, [checkCore, refreshAddress])
 
   useEffect(() => {
-    if (quoteKey == null || receiveAddress.data == null || amountDuffs == null) return
+    if (feeEstimateKey == null || receiveAddress.data == null || amountDuffs == null) return
 
     const address = receiveAddress.data
     const timer = setTimeout(() => {
-      void loadFee(async () => await extensionAPI.estimateCoreTransfer({
+      void loadFeeEstimate(async () => await extensionAPI.estimateCoreTransfer({
         type: 'assetLock',
         outputs: [{ address, amountDuffs: amountDuffs.toString() }]
       }).then(
-        estimate => ({ key: quoteKey, estimate, error: null }),
-        (e: unknown) => ({ key: quoteKey, estimate: null, error: e instanceof Error ? e.message : 'Failed to estimate the fee.' })
+        estimate => ({ key: feeEstimateKey, estimate, error: null }),
+        (e: unknown) => ({ key: feeEstimateKey, estimate: null, error: e instanceof Error ? e.message : 'Failed to estimate the fee.' })
       ))
     }, 350)
     return () => clearTimeout(timer)
-  }, [quoteKey, receiveAddress.data, amountDuffs, extensionAPI, loadFee])
+  }, [feeEstimateKey, receiveAddress.data, amountDuffs, extensionAPI, loadFeeEstimate])
 
   useEffect(() => {
     if (hasError) return
@@ -291,7 +291,7 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
   }
 
   const handleCorePayment = (): void => {
-    if (estimate == null || amountDuffs == null || insufficient) return
+    if (feeEstimate == null || amountDuffs == null || insufficient) return
 
     void confirmWithPassword(async () => {
       const locks = await extensionAPI.listPendingAssetLocks()
@@ -371,14 +371,14 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
         stage={stage}
         amount={amount}
         balanceDuffs={balanceDuffs}
-        feeDuffs={estimate == null ? null : BigInt(estimate.feeDuffs)}
-        assetLockFeeDuffs={estimate == null ? null : BigInt(estimate.assetLockFeeDuffs)}
+        feeDuffs={feeEstimate == null ? null : BigInt(feeEstimate.feeDuffs)}
+        assetLockFeeDuffs={feeEstimate == null ? null : BigInt(feeEstimate.assetLockFeeDuffs)}
         password={password}
         error={paymentError}
         isLoading={isLoading}
         isCheckingPassword={isCheckingPassword}
         isFeeLoading={isFeeLoading}
-        canPay={!isLoading && payments.error == null && estimate != null && !insufficient}
+        canPay={!isLoading && payments.error == null && feeEstimate != null && !insufficient}
         onAmountChange={value => {
           if (!isDashInputAllowed(value, CORE_DASH_DECIMALS)) return
           setError(null)
