@@ -150,9 +150,19 @@ function IdentityRegistrationFlow ({ context }: { context: LayoutContext }): Rea
   }, [quoteKey, receiveAddress.data, amountDuffs, extensionAPI, loadFee])
 
   useEffect(() => {
-    if (hasError || (stage !== 4 && stage !== 5)) return
+    if (hasError) return
 
-    setHeaderConfigOverride({ hideLeftSection: true })
+    if (stage === 1) {
+      setHeaderConfigOverride({
+        imageType: 'app',
+        imageClasses: '!w-[min(100vw,26.25rem)] opacity-75',
+        containerClasses: 'pointer-events-none absolute -right-24 -top-22'
+      })
+    } else if (stage === 4 || stage === 5) {
+      setHeaderConfigOverride({ hideLeftSection: true })
+    } else {
+      return
+    }
     return () => { setHeaderConfigOverride(null) }
   }, [stage, hasError, setHeaderConfigOverride])
 
