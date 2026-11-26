@@ -14,7 +14,7 @@ export function IdentityUpdateDetails ({ data }: IdentityUpdateDetailsProps): Re
   return (
     <div className='flex flex-col gap-2.5'>
       <TransactionDetailsCard title='Identity'>
-        <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+        <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
           {data.identityId}
         </Identifier>
       </TransactionDetailsCard>

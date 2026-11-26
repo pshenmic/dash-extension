@@ -26,7 +26,7 @@ export function TokenTransferDetails ({ transition }: TokenTransferDetailsProps)
 
       {transition.recipient != null && (
         <TransactionDetailsCard title='Recipient'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
             {transition.recipient}
           </Identifier>
         </TransactionDetailsCard>
@@ -34,7 +34,7 @@ export function TokenTransferDetails ({ transition }: TokenTransferDetailsProps)
 
       {transition.tokenId != null && (
         <TransactionDetailsCard title='Token ID'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
             {transition.tokenId}
           </Identifier>
         </TransactionDetailsCard>
@@ -42,7 +42,7 @@ export function TokenTransferDetails ({ transition }: TokenTransferDetailsProps)
 
       {transition.dataContractId != null && (
         <TransactionDetailsCard title='Data Contract ID'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
             {transition.dataContractId}
           </Identifier>
         </TransactionDetailsCard>
@@ -63,7 +63,7 @@ export function TokenTransferDetails ({ transition }: TokenTransferDetailsProps)
             </div>
             <div className='flex justify-between'>
               <Text size='sm' color='muted'>Action ID:</Text>
-              <Identifier className='!text-[0.875rem]' copyButton edgeChars={4}>
+              <Identifier className='!text-[0.875rem]' copyButton linesAdjustment={false} edgeChars={4}>
                 {transition.groupInfo.actionId}
               </Identifier>
             </div>

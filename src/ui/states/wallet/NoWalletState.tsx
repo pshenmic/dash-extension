@@ -43,7 +43,6 @@ function NoWalletState (): React.JSX.Element {
             }
             description='Enjoy all the benefits of Dash Platform in your browser'
             centered
-            titleClassName='font-extrabold leading-tight'
             containerClassName='max-w-sm mx-auto'
           />
         </div>

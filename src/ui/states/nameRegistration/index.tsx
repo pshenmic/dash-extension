@@ -342,7 +342,7 @@ const NameRegistrationState: React.FC = () => {
                     </div>
                     <div className='flex items-center gap-1.5'>
                       <Text size='xs' weight='medium'>
-                        {REGULAR_NAME_COST_DASH.toFixed(3)}
+                        {REGULAR_NAME_COST_DASH}
                       </Text>
                       <Text size='xs' color='muted'>
                         <DashLogo size={10} className='!text-dash-primary-dark-blue' />
@@ -379,6 +379,7 @@ const NameRegistrationState: React.FC = () => {
             )
           : (
             <ConfirmationStep
+              paymentAmount={requiredBalance}
               rateData={rateState.data}
               password={password}
               passwordError={passwordError}

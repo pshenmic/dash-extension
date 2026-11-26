@@ -1,10 +1,9 @@
 import { SendShieldedTransferHandler } from '../../../../src/content-script/api/private/wallet/sendShieldedTransfer'
 import { ShieldedService } from '../../../../src/content-script/services/ShieldedService'
 
-// Keep the real pshenmic-dpp (dash-platform-sdk needs PLATFORM_V12 etc.) and only
-// stub the address parser the handler calls.
-jest.mock('pshenmic-dpp', () => {
-  const actual = jest.requireActual('pshenmic-dpp')
+// Keep the real shielded module and only stub the address parser the handler calls.
+jest.mock('dash-platform-shielded', () => {
+  const actual = jest.requireActual('dash-platform-shielded')
   return {
     ...actual,
     OrchardAddressWASM: { ...actual.OrchardAddressWASM, fromBech32m: jest.fn((addr) => ({ addr })) }
@@ -60,7 +59,7 @@ describe('SendShieldedTransferHandler', () => {
 
   const handle = async (payload: any): Promise<any> => {
     return await handler.handle({
-      context: 'dash-platform-extension',
+      context: 'dash-extension',
       id: 'id',
       method: 'SEND_SHIELDED_TRANSFER',
       type: 'request',

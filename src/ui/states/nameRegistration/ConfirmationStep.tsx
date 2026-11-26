@@ -1,10 +1,9 @@
 import React from 'react'
 import { Button, ValueCard, Text, DashLogo, Input } from 'dash-ui-kit/react'
 import { PublicKeySelect, PublicKeyInfo, KeyRequirement } from '../../components/keys'
-import { CONTESTED_NAME_COST_DASH } from './constants'
 
 interface ConfirmationStepProps {
-  // Rate data
+  paymentAmount: number
   rateData: number | null
 
   // Authentication
@@ -28,6 +27,7 @@ interface ConfirmationStepProps {
 }
 
 export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
+  paymentAmount,
   rateData,
   password,
   passwordError,
@@ -51,11 +51,11 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         </Text>
         <div className='flex flex-col items-end gap-1'>
           <div className='flex items-center gap-1 !text-dash-primary-dark-blue'>
-            {CONTESTED_NAME_COST_DASH} <DashLogo size={10} className='!text-dash-primary-dark-blue' />
+            {paymentAmount} <DashLogo size={10} className='!text-dash-primary-dark-blue' />
           </div>
           <div className='bg-brand/5 px-1 py-0.5 flex items-center rounded'>
             <Text size='xs' className='!text-dash-brand'>
-              ~ ${(CONTESTED_NAME_COST_DASH * (rateData ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ~ ${(paymentAmount * (rateData ?? 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
           </div>
         </div>
