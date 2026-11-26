@@ -1,6 +1,7 @@
 import { DashPlatformSDK } from 'dash-platform-sdk'
 import { ShieldedEncryptedNote, ShieldedNullifierStatus } from 'dash-platform-sdk/types'
-import { OrchardAddressWASM, RecoveredNoteWASM, SpendableNoteWASM, StateTransitionWASM } from 'pshenmic-dpp'
+import { StateTransitionWASM } from 'pshenmic-dpp'
+import { DashPlatformShielded, OrchardAddressWASM, RecoveredNoteWASM, SpendableNoteWASM } from 'dash-platform-shielded'
 import { StorageAdapter } from '../storage/storageAdapter'
 import { ShieldedNotesRepository } from '../repository/ShieldedNotesRepository'
 import { RepositoryScope } from '../../types/RepositoryScope'
@@ -66,7 +67,7 @@ export class ShieldedService {
     let sdk = this.shared.sdks.get(network)
 
     if (sdk == null) {
-      sdk = new DashPlatformSDK({ network: Network[network] })
+      sdk = new DashPlatformSDK({ network: Network[network], shielded: new DashPlatformShielded() })
       this.shared.sdks.set(network, sdk)
     }
 

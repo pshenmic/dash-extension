@@ -1,5 +1,5 @@
 import { DashPlatformSDK } from 'dash-platform-sdk'
-import { OrchardAddressWASM } from 'pshenmic-dpp'
+import { OrchardAddressWASM } from 'dash-platform-shielded'
 import { EventData } from '../../../../types'
 import { APIHandler } from '../../APIHandler'
 import { WalletRepository } from '../../../repository/WalletRepository'
