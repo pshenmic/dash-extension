@@ -12,13 +12,13 @@ export function MasternodeVoteDetails ({ data }: MasternodeVoteDetailsProps): Re
   return (
     <div className='flex flex-col gap-2.5'>
       <TransactionDetailsCard title='Pro TX Hash'>
-        <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+        <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
           {data.proTxHash}
         </Identifier>
       </TransactionDetailsCard>
 
       <TransactionDetailsCard title='Data Contract'>
-        <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+        <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
           {data.contractId}
         </Identifier>
       </TransactionDetailsCard>
@@ -37,7 +37,7 @@ export function MasternodeVoteDetails ({ data }: MasternodeVoteDetailsProps): Re
       </div>
 
       <TransactionDetailsCard title='Voter Identity'>
-        <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+        <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
           {data.ownerId}
         </Identifier>
       </TransactionDetailsCard>
@@ -83,7 +83,7 @@ export function MasternodeVoteDetails ({ data }: MasternodeVoteDetailsProps): Re
         <div className='flex flex-col gap-2.5'>
           {data.modifiedDataIds.map((id: string, index: number) => (
             <TransactionDetailsCard key={index} title={`Modified Data ID ${index + 1}`}>
-              <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+              <Identifier className='!text-[1.25rem]' avatar copyButton linesAdjustment={false}>
                 {id}
               </Identifier>
             </TransactionDetailsCard>

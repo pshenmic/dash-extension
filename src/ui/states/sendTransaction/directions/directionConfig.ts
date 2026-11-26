@@ -1,4 +1,3 @@
-import { PROVING_NOTE } from '../../../constants'
 import type { Direction, TransferMode } from '../types'
 
 // Placeholder in info card texts replaced with the estimated fee in Dash.
@@ -52,19 +51,13 @@ const TOP_UP_ADDRESS_CARD: InfoCardConfig = {
 
 const TWO_STEP_SHIELDING_CARD: InfoCardConfig = {
   title: 'Two-step Shielding',
-  text: 'Locking Dash broadcasts an L1 transaction, waits for a Chain Lock (a few minutes) and then shields the credits into your shielded balance or the shielded address you enter. The L1 lock amount stays publicly visible.',
-  duration: CROSS_LAYER_DURATION
+  text: 'Dash is locked on Dash Core, then the credits are sent to your shielded balance or the shielded address you enter. The locked amount stays visible on Dash Core. Completion time depends on the network.'
 }
 
 const CROSS_CHAIN_WITHDRAWAL_CARD: InfoCardConfig = {
   title: 'Cross-chain withdrawal',
   text: `Withdrawing to Core costs a ${FEE_PLACEHOLDER} network fee.`,
   duration: CROSS_LAYER_DURATION
-}
-
-const SHIELDING_CARD: InfoCardConfig = {
-  title: 'Shielding',
-  text: PROVING_NOTE
 }
 
 const SINGLE_HASH = {
@@ -153,7 +146,6 @@ export const DIRECTION_DETAILS: Partial<Record<Direction, DirectionDetails>> = {
   },
   'platformAddress->shielded': {
     ...SINGLE_HASH,
-    infoCard: SHIELDING_CARD,
     confirmLabel: 'Shield',
     hasProgress: true,
     successMessage: SENT_TO_OWN_SHIELDED,

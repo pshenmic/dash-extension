@@ -3475,10 +3475,10 @@ dash-core-sdk@1.1.6-dev.2:
     typescript "^5.9.2"
     ws "^8.18.3"
 
-dash-platform-sdk@1.7.0-dev.2:
-  version "1.7.0-dev.2"
-  resolved "https://registry.yarnpkg.com/dash-platform-sdk/-/dash-platform-sdk-1.7.0-dev.2.tgz#03051742e3d267aa44f8ad53f7f164a07d809357"
-  integrity sha512-vG51tAm7yQM7i8iwsmaVrOsZ87SgnPMaJrYobCfy7sXr6v3Rgh8TAUOcCCO8GwU3xlHBz/6z8/xl8r5068zYCw==
+dash-platform-sdk@1.7.0-dev.3:
+  version "1.7.0-dev.3"
+  resolved "https://registry.yarnpkg.com/dash-platform-sdk/-/dash-platform-sdk-1.7.0-dev.3.tgz#b3d2ef82882660ea5df104dfcd88f46606cf0b40"
+  integrity sha512-8t6fFdPJqEWANDDePdIf83PsLlmMaFLPfGXsaKsF13T286u1hWdouX3CmMJJ6/mNZwZ+4IQZABuOyhJ+EfOnBQ==
   dependencies:
     "@bufbuild/protobuf" "^2.6.0"
     "@protobuf-ts/grpcweb-transport" "^2.11.1"
@@ -3486,7 +3486,17 @@ dash-platform-sdk@1.7.0-dev.2:
     "@scure/bip32" "^2.0.0"
     "@scure/bip39" "^2.0.0"
     "@scure/btc-signer" "^2.0.1"
-    pshenmic-dpp "2.1.0"
+    pshenmic-dpp "2.1.1"
+
+dash-platform-shielded@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/dash-platform-shielded/-/dash-platform-shielded-0.0.3.tgz#4782bab88ea0e6d5cc61492cad9130593318cfc6"
+  integrity sha512-8YmjXMWUQCbRwBbxgrbaJNiOE+BS5GY/KV8f3m32EX/trL5Uf5UjMN3uAuCIooFaCKlU745xkzBX4eqm0rwNeA==
+  dependencies:
+    "@emnapi/core" "1.11.3"
+    "@emnapi/runtime" "1.11.3"
+    "@tybys/wasm-util" "^0.10.1"
+    fflate "^0.8.3"
 
 dash-ui-kit@2.1.6:
   version "2.1.6"
@@ -6032,10 +6042,10 @@ protoc@^32.1.0:
   resolved "https://registry.yarnpkg.com/protoc/-/protoc-32.1.0.tgz#c3e6230aca544de1e7d1fe44672f6a680218912a"
   integrity sha512-yICJJCGHJLM9ao5W2V4CGp1d7xuBsdHzgVDw6L8mdDtoIcqzN3arNPOm9Jx4Ufp5vfhQfJGkNUDo6mm/SLPdXw==
 
-pshenmic-dpp@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/pshenmic-dpp/-/pshenmic-dpp-2.1.0.tgz#d0a49eb871fd981c6b0c16775e347185d8262199"
-  integrity sha512-F2Ne2Abkz7mwHjM4N3cADqSqa6WP2RPkUby48BRSQXC4yNS4Ju57B9YYj7JPakEKZZ3Xy6qJRjONsPxEo4TlAw==
+pshenmic-dpp@2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/pshenmic-dpp/-/pshenmic-dpp-2.1.1.tgz#22e5ad6141fd3d00b64815fc5554ed230acb0fde"
+  integrity sha512-xfH8KDrpWuGc24cDwHFRL4LCT6/FsXsA6l8LnUCho3mDZNA5ltO/1hd92GvZV3P8FcxMcSGVWmLy3vlyBwyPYQ==
   dependencies:
     "@emnapi/core" "1.11.3"
     "@emnapi/runtime" "1.11.3"

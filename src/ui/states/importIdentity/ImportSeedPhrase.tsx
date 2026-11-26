@@ -142,7 +142,7 @@ function ImportSeedPhrase (): React.JSX.Element {
             <TitleBlock
               title='Import your Seed Phrase'
               description='Paste your DashPay seed phrase from mobile wallet or Dash Evo tool'
-              titleClassName='font-extrabold text-gray-900 mb-2 leading-tight'
+              titleClassName='mb-2'
             />
           </div>
         </div>

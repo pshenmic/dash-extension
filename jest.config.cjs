@@ -11,7 +11,7 @@ module.exports = {
     './test/bootstrap.js'
   ],
   transformIgnorePatterns: [
-    '/node_modules/(?!(?:.pnpm/))(?!dash-core-sdk|dash-platform-sdk|pshenmic-dpp|@protobuf-ts/grpcweb-transport|@scure*|@noble*|cbor-x|cbor2|@cto.af|micro-packed)'
+    '/node_modules/(?!(?:.pnpm/))(?!dash-core-sdk|dash-platform-sdk|dash-platform-shielded|pshenmic-dpp|@protobuf-ts/grpcweb-transport|@scure*|@noble*|cbor-x|cbor2|@cto.af|micro-packed)'
   ],
   moduleNameMapper: {
     // dash-core-sdk only exports an ESM entry ("import" condition).
