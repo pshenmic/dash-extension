@@ -3454,10 +3454,10 @@ csstype@^3.2.2:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.2.3.tgz#ec48c0f3e993e50648c86da559e2610995cf989a"
   integrity sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==
 
-dash-core-sdk@1.1.4:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/dash-core-sdk/-/dash-core-sdk-1.1.4.tgz#f0ca3e6336acc3f5dced11e739db8f3e79292ca2"
-  integrity sha512-uFvcDA8oo8dh33ZTxvRGKH8UNLuDLxED3YtSbDTlJh0LTxhZtNPZ4k+MSum/tkO2BWUMC3Gt2SRaq3TUlsqUaQ==
+dash-core-sdk@1.1.6-dev.2:
+  version "1.1.6-dev.2"
+  resolved "https://registry.yarnpkg.com/dash-core-sdk/-/dash-core-sdk-1.1.6-dev.2.tgz#b6f52cd107adfa3d5eccbf2732e62c372beaa54c"
+  integrity sha512-Zd/EEmY78AKeaGJs0U+IfaR70F5XAjPi8y6byvEfWEqIVjCjiS3zpc1PD1sExMmwdygaLegugVnfbfGaAZi7pg==
   dependencies:
     "@dashevo/x11-hash-js" "^1.0.2"
     "@noble/curves" "^2.0.1"
