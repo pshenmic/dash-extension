@@ -33,6 +33,14 @@ export default (env, argv) => {
     module: {
       rules: [
         {
+          // dash-platform-shielded requires its Node-API addons dynamically.
+          // They are never used in the browser (the threaded-WASM path is),
+          // so keep them out of the JS parser and out of dist.
+          test: /\.node$/i,
+          type: 'asset/resource',
+          generator: { emit: false }
+        },
+        {
           test: /\.module\.p?css$/i,
           use: [
             'style-loader',
