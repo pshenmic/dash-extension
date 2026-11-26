@@ -11,11 +11,12 @@ export function Stage4Processing ({ stage, isRegistering }: Stage4ProcessingProp
     <ProcessingScreen
       stage={stage}
       totalSteps={5}
-      title={isRegistering ? <>Registering your<br />Identity…</> : <>We received your<br />payment</>}
+      titleVariant='screen'
+      title='Registering your identity…'
       description={
         isRegistering
-          ? 'Please wait while we register your identity on the Dash Platform network.'
-          : 'Please kindly wait for all Identity registration transactions to be processed by the network. Usually, it takes less than 10 seconds.'
+          ? 'Keep this window open while the payment and identity registration are processed.'
+          : 'Preparing your registration.'
       }
     />
   )

@@ -59,7 +59,7 @@ export function ResultStep ({ outcome, draft, config, amount, balance, fee, isPr
   const successMessage = canShieldToOthers(draft) && !isShieldToMyself(draft) ? SENT_TO_SHIELDED_ADDRESS : config.successMessage
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className={`flex flex-col ${isSuccess ? 'gap-4' : 'gap-6'}`}>
       <ResultHeader
         status={outcome.type}
         amount={shown != null ? <><span className='font-bold'>{formatDashAmount(shown.amount, shown.decimals)}</span> {balance.unit}</> : <span className='font-bold'>Completed</span>}
@@ -75,7 +75,7 @@ export function ResultStep ({ outcome, draft, config, amount, balance, fee, isPr
         const hash = outcome.hashes[hashType]
         const isCoreHash = hashType === 'core' || (hashType === 'single' && draft.from.type === 'core')
         return hash != null
-          ? <TransactionHashBlock key={hashType} hash={hash} network={network} label={hashLabel(hashType, draft)} explorerUrl={isCoreHash ? getCoreTransactionExplorerUrl(hash, network) : undefined} />
+          ? <TransactionHashBlock key={hashType} hash={hash} network={network} label={hashLabel(hashType, draft)} explorerUrl={isCoreHash ? getCoreTransactionExplorerUrl(hash, network) : undefined} compactSpacing />
           : <SummaryRow key={hashType} label={hashLabel(hashType, draft)} value='Pending' />
       })}
 
