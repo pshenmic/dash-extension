@@ -3488,10 +3488,10 @@ dash-platform-sdk@1.7.0-dev.3:
     "@scure/btc-signer" "^2.0.1"
     pshenmic-dpp "2.1.1"
 
-dash-platform-shielded@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/dash-platform-shielded/-/dash-platform-shielded-0.0.3.tgz#4782bab88ea0e6d5cc61492cad9130593318cfc6"
-  integrity sha512-8YmjXMWUQCbRwBbxgrbaJNiOE+BS5GY/KV8f3m32EX/trL5Uf5UjMN3uAuCIooFaCKlU745xkzBX4eqm0rwNeA==
+dash-platform-shielded@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/dash-platform-shielded/-/dash-platform-shielded-0.0.4.tgz#371b30c050f943fec0bb6f8f535be7748f0ef83d"
+  integrity sha512-O7LDOAtdY0WRvQj0AnHeHtcUddNdwXcA5lSWXqDgbUWAQ2j0wWQP3n8bwDiGAnAqG06S+Axz2nYv3329+/UchA==
   dependencies:
     "@emnapi/core" "1.11.3"
     "@emnapi/runtime" "1.11.3"
