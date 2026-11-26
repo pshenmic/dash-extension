@@ -1,3 +1,4 @@
+import { DashCoreSDK } from 'dash-core-sdk'
 import { DashPlatformSDK } from 'dash-platform-sdk'
 import { EventData } from '../../../../types'
 import { APIHandler } from '../../APIHandler'
@@ -9,6 +10,8 @@ import { RequestAssetLockFundingAddressHandler } from '../assetLocks/requestAsse
 import { RegisterIdentityHandler } from './registerIdentity'
 import { RegisterIdentityFromWalletPayload } from '../../../../types/messages/payloads/RegisterIdentityFromWalletPayload'
 import { RegisterIdentityFromWalletResponse } from '../../../../types/messages/response/RegisterIdentityFromWalletResponse'
+import { RepositoryScope } from '../../../../types/RepositoryScope'
+import { validateRepositoryScopePayload } from '../../../../utils/validateRepositoryScopePayload'
 import { deriveCoreAccountXpub } from '../../../../utils/coreAddresses'
 import { findUnfinishedAssetLock } from '../../../../utils/pendingAssetLocks'
 import { WalletType } from '../../../../types/WalletType'
@@ -30,6 +33,7 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
   requestAssetLockFundingAddress: RequestAssetLockFundingAddressHandler
   registerIdentity: RegisterIdentityHandler
   sdk: DashPlatformSDK
+  coreSDK: DashCoreSDK
 
   constructor (
     walletRepository: WalletRepository,
@@ -38,7 +42,8 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
     assetLockFunding: AssetLockFundingService,
     requestAssetLockFundingAddress: RequestAssetLockFundingAddressHandler,
     registerIdentity: RegisterIdentityHandler,
-    sdk: DashPlatformSDK
+    sdk: DashPlatformSDK,
+    coreSDK: DashCoreSDK
   ) {
     this.walletRepository = walletRepository
     this.assetLockFundingAddressesRepository = assetLockFundingAddressesRepository
@@ -47,14 +52,22 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
     this.requestAssetLockFundingAddress = requestAssetLockFundingAddress
     this.registerIdentity = registerIdentity
     this.sdk = sdk
+    this.coreSDK = coreSDK
   }
 
   async handle (event: EventData): Promise<RegisterIdentityFromWalletResponse> {
     const payload: RegisterIdentityFromWalletPayload = event.payload
-    const wallet = await this.walletRepository.getCurrent()
+
+    // Resolved once and handed to every step, so the funding address, the
+    // payment and the identity all belong to the same (network, wallet) even if
+    // the selection changes while the asset lock is waiting for its proof.
+    const scope = await this.resolveScope(payload)
+
+    const walletRepository = this.walletRepository.forScope(scope)
+    const wallet = await walletRepository.getCurrent()
 
     if (wallet == null) {
-      throw new Error('No wallet is chosen')
+      throw new Error(`Wallet ${scope.walletId} does not exist on ${scope.network}`)
     }
     if (wallet.type !== WalletType.seedphrase) {
       throw new Error('Identity registration is only supported for seedphrase wallets')
@@ -64,17 +77,17 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
     // A registration names no recipient - it creates one - so any unfinished
     // registration is this one, and finishing it is what a repeat is for.
     const unfinished = findUnfinishedAssetLock(
-      await this.pendingAssetLocksRepository.getAll(), 'registration', null
+      await this.pendingAssetLocksRepository.forScope(scope).getAll(), 'registration', null
     )
 
     if (unfinished != null) {
-      const resumed = await this.register(unfinished.fundingAddress, unfinished.fundingTxid, payload.password, event)
+      const resumed = await this.register(scope, unfinished.fundingAddress, unfinished.fundingTxid, payload.password, event)
 
       return { ...resumed, coreFeeDuffs: '0', resumed: true }
     }
 
     const account = 0
-    const xpub = await this.walletRepository.getCoreAccountXpub(account) ??
+    const xpub = await walletRepository.getCoreAccountXpub(account) ??
       await deriveCoreAccountXpub(wallet, payload.password, account, this.sdk)
 
     // The registration pool, which is what REQUEST_ASSET_LOCK_FUNDING_ADDRESS
@@ -82,7 +95,7 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
     // rather than left behind.
     const { address: fundingAddress } = await this.requestAssetLockFundingAddress.handle({
       ...event,
-      payload: { purpose: 'registration' }
+      payload: { purpose: 'registration', walletId: scope.walletId, network: scope.network }
     })
 
     const funding = await this.assetLockFunding.fundFromWallet({
@@ -92,10 +105,10 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
       fundingAddress,
       amountDuffs: BigInt(payload.amountDuffs),
       password: payload.password,
-      assetLockFundingAddressesRepository: this.assetLockFundingAddressesRepository
+      assetLockFundingAddressesRepository: this.assetLockFundingAddressesRepository.forScope(scope)
     })
 
-    const registered = await this.register(fundingAddress, funding.fundingTxid, payload.password, event)
+    const registered = await this.register(scope, fundingAddress, funding.fundingTxid, payload.password, event)
 
     return {
       ...registered,
@@ -107,13 +120,15 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
   }
 
   // The Platform half: create the identity from this deposit.
-  private async register (fundingAddress: string, fundingTxid: string, password: string, event: EventData): Promise<Omit<RegisterIdentityFromWalletResponse, 'coreFeeDuffs' | 'resumed'>> {
+  private async register (scope: RepositoryScope, fundingAddress: string, fundingTxid: string, password: string, event: EventData): Promise<Omit<RegisterIdentityFromWalletResponse, 'coreFeeDuffs' | 'resumed'>> {
     const registered = await this.registerIdentity.handle({
       ...event,
       payload: {
         assetLockFundingAddress: fundingAddress,
         assetLockFundingTxid: fundingTxid,
-        password
+        password,
+        walletId: scope.walletId,
+        network: scope.network
       }
     })
 
@@ -124,6 +139,35 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
       fundingAddress,
       fundingTxid
     }
+  }
+
+  // Same contract as REGISTER_IDENTITY, and the same reason to check both SDKs:
+  // they are fixed to a network for the lifetime of the document that built
+  // them, and this call spends real coins before the registration handler gets
+  // to make the check itself.
+  private async resolveScope (payload: RegisterIdentityFromWalletPayload): Promise<RepositoryScope> {
+    let scope: RepositoryScope
+
+    if (payload.walletId != null && payload.network != null) {
+      scope = { network: payload.network, walletId: payload.walletId }
+    } else {
+      const currentWallet = await this.walletRepository.getCurrent()
+
+      if (currentWallet == null) {
+        throw new Error('No wallet is chosen')
+      }
+
+      scope = { network: currentWallet.network, walletId: currentWallet.walletId }
+    }
+
+    if (this.sdk.getNetwork() !== scope.network || this.coreSDK.network !== scope.network) {
+      throw new Error(
+        `Registration is bound to ${scope.network}, but this context is connected to ` +
+        `${this.sdk.getNetwork()} (platform) and ${this.coreSDK.network} (core) - reopen the registration page`
+      )
+    }
+
+    return scope
   }
 
   validatePayload (payload: RegisterIdentityFromWalletPayload): string | null {
@@ -139,6 +183,6 @@ export class RegisterIdentityFromWalletHandler implements APIHandler {
       return 'password must be provided'
     }
 
-    return null
+    return validateRepositoryScopePayload(payload)
   }
 }

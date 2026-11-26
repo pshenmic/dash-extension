@@ -24,6 +24,7 @@ describe('RegisterIdentityFromWalletHandler', () => {
   let requestAssetLockFundingAddress: any
   let registerIdentity: any
   let sdk: any
+  let coreSDK: any
   let handler: RegisterIdentityFromWalletHandler
 
   const event = (payload: any): any => ({ id: '1', context: 'dash-platform-extension', method: 'REGISTER_IDENTITY_FROM_WALLET', type: 'request', payload })
@@ -36,10 +37,11 @@ describe('RegisterIdentityFromWalletHandler', () => {
 
     walletRepository = {
       getCurrent: jest.fn(async () => ({ walletId: 'wallet1', type: WalletType.seedphrase, network: 'testnet' })),
-      getCoreAccountXpub: jest.fn(async () => XPUB)
+      getCoreAccountXpub: jest.fn(async () => XPUB),
+      forScope: jest.fn(() => walletRepository)
     }
-    assetLockFundingAddressesRepository = {}
-    pendingAssetLocksRepository = { getAll: jest.fn(async () => []) }
+    assetLockFundingAddressesRepository = { forScope: jest.fn(() => assetLockFundingAddressesRepository) }
+    pendingAssetLocksRepository = { getAll: jest.fn(async () => []), forScope: jest.fn(() => pendingAssetLocksRepository) }
 
     assetLockFunding = {
       fundFromWallet: jest.fn(async () => ({
@@ -55,7 +57,8 @@ describe('RegisterIdentityFromWalletHandler', () => {
       }))
     }
 
-    sdk = {}
+    sdk = { getNetwork: jest.fn(() => 'testnet') }
+    coreSDK = { network: 'testnet' }
 
     handler = new RegisterIdentityFromWalletHandler(
       walletRepository,
@@ -64,8 +67,34 @@ describe('RegisterIdentityFromWalletHandler', () => {
       assetLockFunding,
       requestAssetLockFundingAddress,
       registerIdentity,
-      sdk
+      sdk,
+      coreSDK
     )
+  })
+
+  it('binds every step to one (network, wallet) pair', async () => {
+    const scope = { network: 'testnet', walletId: 'wallet1' }
+
+    await handle({ amountDuffs: '100000000', password: 'test', ...scope })
+
+    expect(walletRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(assetLockFundingAddressesRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(pendingAssetLocksRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(requestAssetLockFundingAddress.handle).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining(scope)
+    }))
+    expect(registerIdentity.handle).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining(scope)
+    }))
+  })
+
+  it('refuses to spend anything when this context is on another network', async () => {
+    sdk.getNetwork.mockReturnValue('mainnet')
+
+    await expect(handle({ amountDuffs: '100000000', password: 'test', walletId: 'wallet1', network: 'testnet' }))
+      .rejects.toThrow('reopen the registration page')
+    expect(assetLockFunding.fundFromWallet).not.toHaveBeenCalled()
+    expect(requestAssetLockFundingAddress.handle).not.toHaveBeenCalled()
   })
 
   it('reserves a funding address, pays it from the wallet and registers the identity', async () => {
@@ -147,7 +176,7 @@ describe('RegisterIdentityFromWalletHandler', () => {
     await handle()
 
     expect(requestAssetLockFundingAddress.handle).toHaveBeenCalledWith(expect.objectContaining({
-      payload: { purpose: 'registration' }
+      payload: { purpose: 'registration', walletId: 'wallet1', network: 'testnet' }
     }))
   })
 
@@ -161,7 +190,9 @@ describe('RegisterIdentityFromWalletHandler', () => {
       payload: {
         assetLockFundingAddress: FUNDING_ADDRESS,
         assetLockFundingTxid: 'b'.repeat(64),
-        password: 'test'
+        password: 'test',
+        walletId: 'wallet1',
+        network: 'testnet'
       }
     }))
   })

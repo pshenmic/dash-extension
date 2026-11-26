@@ -94,7 +94,8 @@ describe('RegisterIdentityHandler', () => {
       })),
       switchIdentity: jest.fn(async () => {
         order.push('switchIdentity')
-      })
+      }),
+      forScope: jest.fn(() => walletRepository)
     }
 
     identitiesRepository = {
@@ -105,7 +106,8 @@ describe('RegisterIdentityHandler', () => {
       }),
       remove: jest.fn(async () => {
         order.push('identityRemove')
-      })
+      }),
+      forScope: jest.fn(() => identitiesRepository)
     }
 
     assetLockFundingAddressesRepository = {
@@ -120,7 +122,8 @@ describe('RegisterIdentityHandler', () => {
       }),
       markAsUsed: jest.fn(async () => {
         order.push('markUsed')
-      })
+      }),
+      forScope: jest.fn(() => assetLockFundingAddressesRepository)
     }
 
     pendingAssetLocksRepository = {
@@ -137,6 +140,7 @@ describe('RegisterIdentityHandler', () => {
     }
 
     coreSDK = {
+      network: 'testnet',
       subscribeToTransactions: jest.fn(() => {
         order.push('subscribe')
         return { close: jest.fn() }
@@ -147,6 +151,7 @@ describe('RegisterIdentityHandler', () => {
     }
 
     sdk = {
+      getNetwork: jest.fn(() => 'testnet'),
       identities: {
         getIdentityByPublicKeyHash: jest.fn(async () => null),
         getIdentityByNonUniquePublicKeyHash: jest.fn(async () => null)
@@ -196,7 +201,7 @@ describe('RegisterIdentityHandler', () => {
     )
   })
 
-  const handle = async (): Promise<any> => {
+  const handle = async (extraPayload: any = {}): Promise<any> => {
     return await handler.handle({
       context: 'dash-platform-extension',
       id: 'id',
@@ -205,10 +210,36 @@ describe('RegisterIdentityHandler', () => {
       payload: {
         assetLockFundingAddress,
         assetLockFundingTxid,
-        password
+        password,
+        ...extraPayload
       }
     })
   }
+
+  test('addresses every store through the wallet the registration was started in', async () => {
+    const scope = { network: 'testnet', walletId: 'wallet1' }
+
+    await handle(scope)
+
+    expect(walletRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(identitiesRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(assetLockFundingAddressesRepository.forScope).toHaveBeenCalledWith(scope)
+    expect(pendingAssetLocksRepository.forScope).toHaveBeenCalledWith(scope)
+  })
+
+  test('falls back to the current selection, read once, when the caller names no pair', async () => {
+    await handle()
+
+    expect(walletRepository.forScope).toHaveBeenCalledWith({ network: 'testnet', walletId: 'wallet1' })
+  })
+
+  test('refuses to touch L1 when this context is connected to another network', async () => {
+    sdk.getNetwork.mockReturnValue('mainnet')
+
+    await expect(handle({ network: 'testnet', walletId: 'wallet1' })).rejects.toThrow('reopen the registration page')
+    expect(coreSDK.broadcastTransaction).not.toHaveBeenCalled()
+    expect(sdk.stateTransitions.broadcast).not.toHaveBeenCalled()
+  })
 
   test('aborts the index scan on a non-not-found error instead of treating it as a free index', async () => {
     sdk.identities.getIdentityByPublicKeyHash.mockRejectedValueOnce(new Error('Metadata not found'))

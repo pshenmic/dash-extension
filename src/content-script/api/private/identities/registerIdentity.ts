@@ -17,6 +17,8 @@ import { buildAssetLockFromFundingTx } from '../../../../utils/buildAssetLockFro
 import { deriveCoreAccountXpub, deriveCoreAddressPrivateKey } from '../../../../utils/coreAddresses'
 import { CoreExplorerService } from '../../../services/CoreExplorerService'
 import { NetworkType } from '../../../../types/PlatformExplorer'
+import { RepositoryScope } from '../../../../types/RepositoryScope'
+import { validateRepositoryScopePayload } from '../../../../utils/validateRepositoryScopePayload'
 import { waitForAssetLockProof } from '../../../../utils/waitForAssetLockProof'
 import { IDENTITY_KEY_DEFINITIONS, buildIdentityCreateTransition } from '../../../../utils/identityRegistration'
 import {
@@ -66,10 +68,22 @@ export class RegisterIdentityHandler implements APIHandler {
     const payload: RegisterIdentityPayload = event.payload
 
     // ── 1. Validate wallet and network context ──────────────────────────────
-    const wallet = await this.walletRepository.getCurrent()
+    // Resolved once and used for every store this registration touches. The
+    // unscoped repositories re-read the current selection on each call, so a
+    // wallet or network switch while the asset lock waits for its proof would
+    // otherwise write the identity - derived from this wallet's seed - into
+    // whichever wallet is selected by then.
+    const scope = await this.resolveScope(payload)
+
+    const walletRepository = this.walletRepository.forScope(scope)
+    const identitiesRepository = this.identitiesRepository.forScope(scope)
+    const assetLockFundingAddressesRepository = this.assetLockFundingAddressesRepository.forScope(scope)
+    const pendingAssetLocksRepository = this.pendingAssetLocksRepository.forScope(scope)
+
+    const wallet = await walletRepository.getCurrent()
 
     if (wallet == null) {
-      throw new Error('No wallet is chosen')
+      throw new Error(`Wallet ${scope.walletId} does not exist on ${scope.network}`)
     }
 
     if (wallet.type !== WalletType.seedphrase) {
@@ -80,7 +94,7 @@ export class RegisterIdentityHandler implements APIHandler {
     // No record means the address is not a deposit this extension handed out,
     // but one of the wallet's own: it is funded from its own coins, and L1 keeps
     // the only record of what an earlier attempt committed.
-    const assetLockFundingAddressEntry = await this.assetLockFundingAddressesRepository.getByAddress(payload.assetLockFundingAddress)
+    const assetLockFundingAddressEntry = await assetLockFundingAddressesRepository.getByAddress(payload.assetLockFundingAddress)
 
     if (assetLockFundingAddressEntry?.used === true) {
       throw new Error(`Asset lock funding address ${payload.assetLockFundingAddress} has already been used for registration`)
@@ -93,7 +107,7 @@ export class RegisterIdentityHandler implements APIHandler {
     let assetLockFundingPrivateKey: PrivateKeyWASM
 
     if (assetLockFundingAddressEntry == null) {
-      const xpub = await this.walletRepository.getCoreAccountXpub(0) ??
+      const xpub = await walletRepository.getCoreAccountXpub(0) ??
         await deriveCoreAccountXpub(wallet, payload.password, 0, this.sdk)
       const { nextUnused } = await this.coreExplorer.getXpubSummary(xpub, wallet.network as NetworkType)
 
@@ -131,7 +145,7 @@ export class RegisterIdentityHandler implements APIHandler {
 
     if (committedAssetLockTxid == null) {
       // Fresh registration: scan for the next free index on-chain.
-      identityIndex = await this.scanFreeIdentityIndex(wallet, payload.password)
+      identityIndex = await this.scanFreeIdentityIndex(wallet, payload.password, identitiesRepository)
     } else if (assetLockFundingAddressEntry?.registrationIdentityIndex != null) {
       // Recovery: reuse the index pinned when the asset lock was broadcast.
       identityIndex = assetLockFundingAddressEntry.registrationIdentityIndex
@@ -143,7 +157,8 @@ export class RegisterIdentityHandler implements APIHandler {
         wallet,
         payload,
         assetLockFundingPrivateKey,
-        committedAssetLockTxid
+        committedAssetLockTxid,
+        identitiesRepository
       )
     }
 
@@ -186,7 +201,7 @@ export class RegisterIdentityHandler implements APIHandler {
       // Written before the transaction can reach the network: from here on the
       // funds are committed on L1, and an interruption must leave a trace of
       // what was started. Removed once the identity exists.
-      await this.pendingAssetLocksRepository.create({
+      await pendingAssetLocksRepository.create({
         assetLockTxid,
         fundingAddress: payload.assetLockFundingAddress,
         fundingTxid: payload.assetLockFundingTxid,
@@ -213,7 +228,7 @@ export class RegisterIdentityHandler implements APIHandler {
         // Persist the broadcasted txid AND the identity index before any further
         // work, so a retry after a crash rebuilds the exact same asset lock instead
         // of re-scanning to a different index.
-        await this.assetLockFundingAddressesRepository.markAsBroadcasted(payload.assetLockFundingAddress, assetLockTxid, identityIndex)
+        await assetLockFundingAddressesRepository.markAsBroadcasted(payload.assetLockFundingAddress, assetLockTxid, identityIndex)
       }
     }
 
@@ -259,11 +274,11 @@ export class RegisterIdentityHandler implements APIHandler {
     // record so the local state never contains a phantom identity. If the
     // identifier is already present (e.g. previous attempt reached this step),
     // we treat it as recovery and skip the create.
-    const existingIdentity = await this.identitiesRepository.getByIdentifier(identifier)
+    const existingIdentity = await identitiesRepository.getByIdentifier(identifier)
     let wasJustCreated = false
 
     if (existingIdentity == null) {
-      await this.identitiesRepository.create(identifier, IdentityType.regular, identityIndex)
+      await identitiesRepository.create(identifier, IdentityType.regular, identityIndex)
       wasJustCreated = true
     }
 
@@ -277,7 +292,7 @@ export class RegisterIdentityHandler implements APIHandler {
         alreadyOnPlatform = true
       } else {
         if (wasJustCreated) {
-          await this.identitiesRepository.remove(identifier)
+          await identitiesRepository.remove(identifier)
         }
         throw e
       }
@@ -298,7 +313,7 @@ export class RegisterIdentityHandler implements APIHandler {
 
         if (!isTimeout) {
           if (wasJustCreated) {
-            await this.identitiesRepository.remove(identifier)
+            await identitiesRepository.remove(identifier)
           }
 
           throw e
@@ -307,12 +322,15 @@ export class RegisterIdentityHandler implements APIHandler {
     }
 
     // ── 15. Mark funding address as used and switch identity ────────────────
+    // The switch is scoped too: it selects the new identity inside the wallet
+    // that registered it, so a user who moved on to another wallet keeps the
+    // selection they are looking at.
     if (assetLockFundingAddressEntry != null) {
-      await this.assetLockFundingAddressesRepository.markAsUsed(payload.assetLockFundingAddress)
+      await assetLockFundingAddressesRepository.markAsUsed(payload.assetLockFundingAddress)
     }
 
-    await this.pendingAssetLocksRepository.remove(assetLockTxid)
-    await this.walletRepository.switchIdentity(identifier)
+    await pendingAssetLocksRepository.remove(assetLockTxid)
+    await walletRepository.switchIdentity(identifier)
 
     return {
       identifier,
@@ -322,8 +340,8 @@ export class RegisterIdentityHandler implements APIHandler {
   }
 
   // The next identity index not occupied by a locally-stored identity.
-  private async nextLocalIdentityIndex (): Promise<number> {
-    const identities = await this.identitiesRepository.getAll()
+  private async nextLocalIdentityIndex (identitiesRepository: IdentitiesRepository): Promise<number> {
+    const identities = await identitiesRepository.getAll()
 
     return findNextLocalIdentityIndex(identities.map((identity) => identity.index))
   }
@@ -338,8 +356,8 @@ export class RegisterIdentityHandler implements APIHandler {
   // on-chain, starting past the next locally-free index (skips indices whose
   // derived auth key is already registered, e.g. the same seedphrase used
   // elsewhere). Throws if none is found within the scan limit.
-  private async scanFreeIdentityIndex (wallet: Wallet, password: string): Promise<number> {
-    const startIndex = await this.nextLocalIdentityIndex()
+  private async scanFreeIdentityIndex (wallet: Wallet, password: string, identitiesRepository: IdentitiesRepository): Promise<number> {
+    const startIndex = await this.nextLocalIdentityIndex(identitiesRepository)
     const scanLimit = startIndex + IDENTITY_INDEX_SCAN_LIMIT
 
     let identityIndex = startIndex
@@ -364,8 +382,8 @@ export class RegisterIdentityHandler implements APIHandler {
   // candidate index and returns the one whose txid matches the committed txid.
   // The original attempt picked the index via the free-index scan, so it lies in
   // the same window from 0. Throws if no candidate matches.
-  private async recoverIdentityIndexFromTxid (wallet: Wallet, payload: RegisterIdentityPayload, assetLockFundingPrivateKey: PrivateKeyWASM, committedTxid: string): Promise<number> {
-    const scanLimit = await this.nextLocalIdentityIndex() + IDENTITY_INDEX_SCAN_LIMIT
+  private async recoverIdentityIndexFromTxid (wallet: Wallet, payload: RegisterIdentityPayload, assetLockFundingPrivateKey: PrivateKeyWASM, committedTxid: string, identitiesRepository: IdentitiesRepository): Promise<number> {
+    const scanLimit = await this.nextLocalIdentityIndex(identitiesRepository) + IDENTITY_INDEX_SCAN_LIMIT
 
     for (let identityIndex = 0; identityIndex < scanLimit; identityIndex++) {
       const registrationKey = await deriveIdentityRegistrationKey(wallet, payload.password, identityIndex, this.sdk)
@@ -415,6 +433,35 @@ export class RegisterIdentityHandler implements APIHandler {
     return false
   }
 
+  // Same contract as TOP_UP_IDENTITY, and the same reason to check both SDKs:
+  // they are fixed to a network for the lifetime of the document that built
+  // them, and this call commits an asset lock on L1 before anything downstream
+  // could notice the mismatch.
+  private async resolveScope (payload: RegisterIdentityPayload): Promise<RepositoryScope> {
+    let scope: RepositoryScope
+
+    if (payload.walletId != null && payload.network != null) {
+      scope = { network: payload.network, walletId: payload.walletId }
+    } else {
+      const currentWallet = await this.walletRepository.getCurrent()
+
+      if (currentWallet == null) {
+        throw new Error('No wallet is chosen')
+      }
+
+      scope = { network: currentWallet.network, walletId: currentWallet.walletId }
+    }
+
+    if (this.sdk.getNetwork() !== scope.network || this.coreSDK.network !== scope.network) {
+      throw new Error(
+        `Registration is bound to ${scope.network}, but this context is connected to ` +
+        `${this.sdk.getNetwork()} (platform) and ${this.coreSDK.network} (core) - reopen the registration page`
+      )
+    }
+
+    return scope
+  }
+
   validatePayload (payload: RegisterIdentityPayload): string | null {
     if (typeof payload.assetLockFundingAddress !== 'string' || payload.assetLockFundingAddress.length === 0) {
       return 'assetLockFundingAddress must be provided'
@@ -428,6 +475,6 @@ export class RegisterIdentityHandler implements APIHandler {
       return 'password must be provided'
     }
 
-    return null
+    return validateRepositoryScopePayload(payload)
   }
 }
