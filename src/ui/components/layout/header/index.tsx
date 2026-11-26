@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority'
 import { useNavigate, useMatches, useLocation, useOutletContext, useParams } from 'react-router-dom'
 import { useStaticAsset } from '../../../hooks/useStaticAsset'
 import { useWalletName } from '../../../hooks/useWalletName'
-import { Button, BurgerMenuIcon, Text, WebIcon } from 'dash-ui-kit/react'
+import { Button, BurgerMenuIcon, Text, ValueCard, WebIcon } from 'dash-ui-kit/react'
 import { BackButton } from '../../common'
 import { NetworkSelector } from '../../controls/NetworkSelector'
 import { WalletSelector } from '../../controls/WalletSelector'
@@ -441,9 +441,11 @@ export default function Header (): React.JSX.Element {
       {(config.showWalletRightReadOnly || config.showNetworkRightReadOnly || config.showNetworkRightSelector) && (
         <div className={`flex items-center gap-2.5 ${config.imageType != null ? 'absolute top-0 right-0 z-10' : config.hideLeftSection && config.showWalletRightReadOnly ? 'w-full justify-between' : ''}`}>
           {config.showWalletRightReadOnly && currentWallet !== null && (
-            <Text size='sm' color='gray' weight='medium' className='text-right' dim>
-              {walletName}
-            </Text>
+            <ValueCard colorScheme='lightGray' size='sm' border={false} className='h-12 min-w-0' title={walletName}>
+              <Text size='sm' weight='medium' className='truncate'>
+                {walletName}
+              </Text>
+            </ValueCard>
           )}
 
           {config.showNetworkRightReadOnly && currentNetwork !== null && (

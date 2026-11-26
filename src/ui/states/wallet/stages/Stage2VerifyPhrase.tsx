@@ -34,7 +34,6 @@ export function Stage2VerifyPhrase ({ mnemonic, wordCount, blankIndices, isLoadi
         <TitleBlock
           title='Fill in your Seed Phrase'
           description="This recovery phrase is your wallet's only backup. If you lose it, no one can help you access your funds. Your recovery phrase is safest when written on paper and stored in a secure place."
-          titleClassName='font-extrabold text-gray-900 leading-tight'
         />
       </div>
 

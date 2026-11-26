@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
-import { Button, Heading, Text, ValueCard } from 'dash-ui-kit/react'
+import { Button, Text, ValueCard } from 'dash-ui-kit/react'
 import { withAccessControl } from '../../components/auth/withAccessControl'
 import { PasswordGate } from '../../components/forms'
 import { TopUpBusyDialog } from '../../components/topup'
+import { TitleBlock } from '../../components/layout/TitleBlock'
 import ScreenLoader from '../../components/layout/screens/ScreenLoader'
 import { useHideBalance, useOpenTopUp, useWalletCapabilities } from '../../hooks'
 import type { OutletContext } from '../../types'
@@ -96,7 +97,7 @@ function ReceiveState (): React.JSX.Element {
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-1'>
-        <Heading as='h1' size='2xl'>Receive</Heading>
+        <TitleBlock variant='screen' title='Receive' />
         <Text size='sm' weight='medium' className='!text-dash-primary-dark-blue/48 !tracking-[-0.03em]'>
           {scopeLabel} - {RECEIVE_TYPE_FULL_LABELS[activeType]}
         </Text>

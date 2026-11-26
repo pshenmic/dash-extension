@@ -1,4 +1,5 @@
 import React from 'react'
+import { hex } from '@scure/base'
 import { Text, Identifier } from 'dash-ui-kit/react'
 import { TransactionDetailsCard } from '../../../../components/transactions'
 import { BatchActions, type BatchActionCode } from '../../../../../enums/BatchActions'
@@ -7,13 +8,23 @@ interface DocumentCreateDetailsProps {
   transition: any
 }
 
+function formatDocumentValue (_key: string, value: unknown): unknown {
+  if (value instanceof Uint8Array) {
+    return hex.encode(value)
+  }
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+  return value
+}
+
 export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProps): React.JSX.Element {
   return (
     <>
       {/* Data Contract Identifier */}
       {transition.dataContractId != null && (
         <TransactionDetailsCard title='Data Contract Identifier'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier size='xs' avatar copyButton linesAdjustment className='[&>button]:ml-auto'>
             {transition.dataContractId}
           </Identifier>
         </TransactionDetailsCard>
@@ -40,7 +51,7 @@ export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProp
       {/* Document Identifier */}
       {transition.id != null && (
         <TransactionDetailsCard title='Document Identifier'>
-          <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+          <Identifier size='xs' avatar copyButton linesAdjustment={false}>
             {transition.id}
           </Identifier>
         </TransactionDetailsCard>
@@ -67,7 +78,7 @@ export function DocumentCreateDetails ({ transition }: DocumentCreateDetailsProp
         <TransactionDetailsCard title='Data'>
           <div className='relative max-h-[200px] overflow-auto'>
             <pre className='text-dash-primary-dark-blue font-dash-grotesque text-sm font-medium opacity-75 whitespace-pre-wrap break-all'>
-              {JSON.stringify(transition.data, null, 2)}
+              {JSON.stringify(transition.data, formatDocumentValue, 2)}
             </pre>
           </div>
         </TransactionDetailsCard>
