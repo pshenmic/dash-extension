@@ -5,13 +5,15 @@ import { AssetOptionCard } from './AssetOptionCard'
 import type { TokenData } from '../../../types'
 import { fromBaseUnit, formatDashAmount, PLATFORM_DASH_DECIMALS } from '../../../utils'
 
+export type SelectableToken = Pick<TokenData, 'identifier' | 'localizations' | 'decimals' | 'balance'>
+
 export interface AssetOption {
   value: string
   label: string
   symbol: string
   icon: React.ReactNode
   isToken?: boolean
-  tokenData?: TokenData
+  tokenData?: SelectableToken
 }
 
 const CREDITS_OPTION: AssetOption = {
@@ -25,9 +27,9 @@ const CREDITS_OPTION: AssetOption = {
   )
 }
 
-// Builds the selectable asset list (Dash + the identity's tokens). Shared by
+// Builds the selectable asset list (Dash + the source tokens). Shared by
 // the asset-selection menu and the transfer screen's asset step.
-export function buildAssetOptions (tokens: TokenData[] = []): AssetOption[] {
+export function buildAssetOptions (tokens: SelectableToken[] = []): AssetOption[] {
   const tokenOptions: AssetOption[] = tokens.map(token => {
     const singularForm = token.localizations?.en?.singularForm ?? token.identifier
     return {
@@ -70,7 +72,7 @@ interface AssetSelectionMenuProps {
   selectedAsset: string
   onAssetSelect: (asset: string) => void
   creditsBalance?: string
-  tokens?: TokenData[]
+  tokens?: SelectableToken[]
 }
 
 export const AssetSelectionMenu: React.FC<AssetSelectionMenuProps> = ({

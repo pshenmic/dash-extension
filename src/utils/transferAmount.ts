@@ -88,7 +88,7 @@ export const transferAmountLimits = (mode: TransferMode): TransferAmountLimits =
   if (mode === 'coreSend') return { min: CORE_DUST_THRESHOLD + 1n, max: null }
   if (WITHDRAWAL_MODES.includes(mode)) return { min: MIN_WITHDRAWAL_CREDITS, max: MAX_WITHDRAWAL_CREDITS }
   if (mode === 'creditTransfer') return { min: MIN_CREDIT_TRANSFER, max: null }
-  if (mode === 'tokenTransfer') return { min: 1n, max: null }
+  if (mode === 'tokenTransfer' || mode === 'tokenShield' || mode === 'shieldedTokenTransfer') return { min: 1n, max: null }
   return { min: MIN_OUTPUT_CREDITS, max: null }
 }
 

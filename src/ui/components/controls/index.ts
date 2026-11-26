@@ -1,5 +1,5 @@
 export { AssetSelectionMenu, buildAssetOptions, formatAssetBalance } from './AssetSelectionMenu'
-export type { AssetOption } from './AssetSelectionMenu'
+export type { AssetOption, SelectableToken } from './AssetSelectionMenu'
 export { AssetOptionCard } from './AssetOptionCard'
 export { AutoSizingInput } from './AutoSizingInput'
 export { ConfirmDialog } from './ConfirmDialog'

@@ -54,6 +54,16 @@ describe('transferDraftReducer', () => {
     expect(next.amount).toBe('')
   })
 
+  it('keeps Shielded as the source when selecting a sample token', () => {
+    const draft = { ...DRAFT, from: { ...DRAFT.from, type: 'shielded' as const } }
+    const asset = { type: 'token', tokenId: 'preview-orchard', shieldedPreview: true } as const
+    const next = transferDraftReducer(draft, { type: 'setAsset', asset, capabilities: SEED })
+
+    expect(next.from.type).toBe('shielded')
+    expect(next.to.type).toBe('shielded')
+    expect(next.amount).toBe('')
+  })
+
   it('seeds Advanced recipients from the Simple recipient and amount', () => {
     const next = transferDraftReducer(DRAFT, { type: 'setAdvanced', value: true })
 

@@ -88,6 +88,13 @@ export function TransferDetails ({ draft, amount, balance, fee: pricedFee, feeEx
             : <><Text size='xs' weight='medium'>{feeLabel}</Text><UsdChip label={dashAmountToUsd(fee?.amount ?? null, fee?.decimals ?? 0, rate)} accent={false} /></>}
           className='!bg-transparent !py-0'
         />
+        {fee?.payer != null && (
+          <SummaryRow
+            label='Fee paid from:'
+            value={<Text size='xs' weight='medium'>{fee.payer === 'identity' ? 'Identity balance' : 'Shielded DASH'}</Text>}
+            className='!bg-transparent !py-0'
+          />
+        )}
         {showTotal && !prepaid && (
           <SummaryRow
             label={<Text size='sm' weight='medium'>Total Amount:</Text>}

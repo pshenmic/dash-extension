@@ -24,7 +24,7 @@ export function SourceRow ({ draft, identities, onIdentityChange, balance, rate,
     )
   }
 
-  const isShielded = draft.from.type === 'shielded'
+  const isShielded = draft.from.type === 'shielded' && draft.asset.type === 'dash'
   const balanceLabel = <SourceBalanceLabel balance={balance} rate={rate} />
 
   return (

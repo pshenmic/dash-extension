@@ -56,7 +56,8 @@ export function ResultStep ({ outcome, draft, config, amount, balance, fee, isPr
   const prepaid = actualFee == null && (isPrepaid || continued)
   const shown = continued ? credited : { amount, decimals: balance.decimals }
   const usd = draft.asset.type === 'dash' && shown != null ? dashAmountToUsd(shown.amount, shown.decimals, rate) : undefined
-  const successMessage = canShieldToOthers(draft) && !isShieldToMyself(draft) ? SENT_TO_SHIELDED_ADDRESS : config.successMessage
+  const isPreview = draft.asset.type === 'token' && draft.asset.shieldedPreview === true
+  const successMessage = !isPreview && canShieldToOthers(draft) && !isShieldToMyself(draft) ? SENT_TO_SHIELDED_ADDRESS : config.successMessage
 
   return (
     <div className='flex flex-col gap-6'>

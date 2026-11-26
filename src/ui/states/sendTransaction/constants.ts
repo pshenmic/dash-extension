@@ -11,6 +11,7 @@ export const UNAVAILABLE_REASON_HINTS: Record<TransferUnavailableReason, string>
   noCoreLayer: 'This wallet has no Dash Core (L1) layer.',
   noAddressLayer: 'This wallet has no platform addresses or shielded balance.',
   noPlatformAddresses: 'No platform addresses yet. Create one in the Addresses tab.',
+  tokenRequiresShieldedSource: 'Choose Identity or Shielded to send this token.',
   tokenRequiresIdentity: 'Tokens can only be sent from an identity to an identity.',
   unsupportedPair: UNSUPPORTED_TRANSFER_MESSAGE
 }

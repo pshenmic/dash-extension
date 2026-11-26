@@ -13,6 +13,8 @@ export type TransferMode =
   | 'coreShield'
   | 'creditTransfer'
   | 'tokenTransfer'
+  | 'tokenShield'
+  | 'shieldedTokenTransfer'
   | 'fund'
   | 'send'
   | 'topup'
@@ -27,7 +29,7 @@ export type TransferMode =
 // Modes carrying an Orchard (Halo2) proof - CPU-heavy, need the long-loading UX.
 export const SHIELDED_MODES: TransferMode[] = ['shield', 'unshield', 'shieldedTransfer', 'shieldedWithdraw']
 
-// Dashboard the send screen was opened from; only the identity scope offers tokens.
+// Dashboard the send screen was opened from.
 export type SendScope = 'all' | 'core' | 'platform' | 'identity'
 
 // Side of a transfer: Dash Core (L1), identity, platform address or shielded pool.
@@ -36,8 +38,7 @@ export type EndpointType = 'core' | 'identity' | 'platformAddress' | 'shielded'
 // Pair of endpoint types, e.g. 'core->identity'.
 export type Direction = `${EndpointType}->${EndpointType}`
 
-// What is transferred: Dash or a token of the source identity.
-export type AssetId = { type: 'dash' } | { type: 'token', tokenId: string }
+export type AssetId = { type: 'dash' } | { type: 'token', tokenId: string, shieldedPreview?: true }
 
 // Screens of the send wizard.
 export type WizardStep = 'fromTo' | 'amount' | 'confirm' | 'progress' | 'result' | 'error'

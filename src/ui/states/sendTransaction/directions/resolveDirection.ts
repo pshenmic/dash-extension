@@ -1,7 +1,7 @@
 import { resolveTransferPair } from '../../../../utils'
 import type { TransferCapabilities, TransferUnavailableReason } from '../../../../utils'
 import type { AssetId, Direction, EndpointType } from '../types'
-import { DIRECTION_DETAILS } from './directionConfig'
+import { DIRECTION_DETAILS, SHIELDED_TOKEN_DETAILS } from './directionConfig'
 import type { DirectionConfig } from './directionConfig'
 
 export type DirectionResolution =
@@ -14,7 +14,7 @@ export const resolveDirection = (from: EndpointType, to: EndpointType, asset: As
 
   if (!pair.supported) return pair
 
-  const details = DIRECTION_DETAILS[pair.direction]
+  const details = SHIELDED_TOKEN_DETAILS[pair.mode] ?? DIRECTION_DETAILS[pair.direction]
 
   if (details == null) return { supported: false, direction: pair.direction, reason: 'unsupportedPair' }
 

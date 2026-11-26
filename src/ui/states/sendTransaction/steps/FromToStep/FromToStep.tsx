@@ -6,7 +6,7 @@ import type { EndpointTypeOption } from '../../../../components/transfer'
 import { InfoCard } from '../../../../components/common'
 import { canShieldToOthers, formatDashAmount, getSourceUnavailableReason, isShieldToMyself, shownFee } from '../../../../../utils'
 import type { TransferCapabilities } from '../../../../../utils'
-import type { NetworkType, TokenData } from '../../../../../types'
+import type { NetworkType } from '../../../../../types'
 import { UNAVAILABLE_REASON_HINTS } from '../../constants'
 import { FEE_PLACEHOLDER } from '../../directions/directionConfig'
 import { resolveDirection } from '../../directions/resolveDirection'
@@ -28,7 +28,8 @@ interface FromToStepProps {
   balance: SourceBalance
   rate: number | null
   shielded: React.ComponentProps<typeof SourceRow>['shielded']
-  tokens: TokenData[]
+  showAssets: boolean
+  hasTokens: boolean
   fee: TransferFee | null
   network: NetworkType
   ownCoreAddress: string | null
@@ -54,7 +55,8 @@ export function FromToStep ({
   balance,
   rate,
   shielded,
-  tokens,
+  showAssets,
+  hasTokens,
   fee,
   network,
   ownCoreAddress,
@@ -90,13 +92,13 @@ export function FromToStep ({
         <EndpointCard label='From' position='top'>
           <div className='flex gap-3'>
             <EndpointTypeSelect value={draft.from.type} options={fromOptions} onChange={(type) => actions.setFromType(type)} className='flex-1 min-w-0' />
-            {draft.from.type === 'identity' && (
+            {showAssets && (
               <SideActionButton
                 icon={<CreditsIcon className='w-4 h-4' />}
                 title='Asset'
                 subtitle={balance.unit}
                 onClick={onOpenAsset}
-                disabled={tokens.length === 0}
+                disabled={!hasTokens}
                 className='shrink-0 max-w-[45%]'
               />
             )}

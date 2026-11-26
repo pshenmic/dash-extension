@@ -28,7 +28,12 @@ export const transferDraftReducer = (draft: TransferDraft, action: TransferDraft
   switch (action.type) {
     case 'setFromType':
       if (action.endpointType === draft.from.type) return draft
-      return withTarget({ ...draft, from: { ...draft.from, type: action.endpointType }, changeAddress: null }, action.capabilities)
+      return withTarget({
+        ...draft,
+        from: { ...draft.from, type: action.endpointType },
+        amount: draft.asset.type === 'token' && draft.asset.shieldedPreview === true ? '' : draft.amount,
+        changeAddress: null
+      }, action.capabilities)
     case 'setFromIdentity':
       return { ...draft, from: { ...draft.from, identityId: action.identityId } }
     case 'setToType':
@@ -39,7 +44,9 @@ export const transferDraftReducer = (draft: TransferDraft, action: TransferDraft
     case 'setShieldToMyself':
       return { ...draft, to: { ...draft.to, recipient: '', shieldToMyself: action.value } }
     case 'setAsset': {
-      const from = action.asset.type === 'token' ? { ...draft.from, type: 'identity' as const } : draft.from
+      const from = action.asset.type === 'token' && action.asset.shieldedPreview !== true
+        ? { ...draft.from, type: 'identity' as const }
+        : draft.from
       return withTarget({ ...draft, from, asset: action.asset, amount: '' }, action.capabilities)
     }
     case 'setAmount':
