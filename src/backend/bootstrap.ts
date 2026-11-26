@@ -1,6 +1,7 @@
 import { ProxyStorageAdapter } from './proxyStorageAdapter'
 import runMigrations from '../content-script/storage/runMigrations'
 import { DashPlatformSDK } from 'dash-platform-sdk'
+import { DashPlatformShielded } from 'dash-platform-shielded'
 import { DashCoreSDK } from 'dash-core-sdk'
 import { PrivateAPI } from '../content-script/api/PrivateAPI'
 import { Network } from '../types/enums/Network'
@@ -25,7 +26,7 @@ export async function startBackend (): Promise<PrivateAPI> {
   await runMigrations(storageAdapter)
 
   const network = await storageAdapter.get('network') as string
-  const sdk = new DashPlatformSDK({ network: Network[network] })
+  const sdk = new DashPlatformSDK({ network: Network[network], shielded: new DashPlatformShielded() })
   const coreSDK = new DashCoreSDK({ network: Network[network] })
 
   const privateAPI = new PrivateAPI(sdk, coreSDK, storageAdapter)
