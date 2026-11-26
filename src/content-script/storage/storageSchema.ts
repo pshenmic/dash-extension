@@ -82,6 +82,8 @@ export interface AppConnectStorageSchema {
   // Identifiers of the identities this website was granted. Empty until the
   // user approves the connection, and never wider than what they picked.
   identities: string[]
+  // Core (L1) addresses this website was granted, on the same terms.
+  addresses: string[]
 }
 
 export interface AppConnectsStorageSchema {

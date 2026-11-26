@@ -13,6 +13,7 @@ import { MemoryStorageAdapter } from '../../../src/content-script/storage/memory
 import { StorageAdapter } from '../../../src/content-script/storage/storageAdapter'
 import { AppConnectsStorageSchema } from '../../../src/content-script/storage/storageSchema'
 import { AppConnectStatus } from '../../../src/types/enums/AppConnectStatus'
+import { AppConnectRepository } from '../../../src/content-script/repository/AppConnectRepository'
 import runMigrations from '../../../src/content-script/storage/runMigrations'
 import { connectBackend } from '../../helpers/connectBackend'
 import { MAX_STATE_TRANSITION_SIZE_BASE64 } from '../../../src/constants'
@@ -24,6 +25,8 @@ describe('what a connected website may see', () => {
   const origin = 'https://app.example.com'
   const identityA = 'HT3pUBM1Uv2mKgdPEN1gxa7A4PdsvNY89aJbdSKQb5wR'
   const identityB = '2HPEBQW4JgatyogjFc5KdYzAXaPAyTEG4ShYYKS7w643'
+  const addressA = 'yTbTaGZGMhyLkHNnLKhNLpBnCHnDwXqdQS'
+  const addressB = 'yfZAr4GgoHfNvBNrGDRbDPjzCVQnGBzHRE'
 
   let sdk: DashPlatformSDK
   let privateAPIClient: PrivateAPIClient
@@ -96,6 +99,7 @@ describe('what a connected website may see', () => {
       expect(response.status).toBe(AppConnectStatus.pending)
       expect(response.identities).toEqual([])
       expect(response.currentIdentity).toBeNull()
+      expect(response.addresses).toEqual([])
       expect(response.network).toBeNull()
     })
 
@@ -144,6 +148,29 @@ describe('what a connected website may see', () => {
       expect((await connect()).identities.map((identity: any) => identity.identifier)).toEqual([identityB])
     })
 
+    it('has no Core address to grant from a wallet without a Core xpub', async () => {
+      await privateAPIClient.approveAppConnect(connectId)
+
+      expect((await connect()).addresses).toEqual([])
+    })
+
+    it('shows the Core addresses the user granted', async () => {
+      await privateAPIClient.approveAppConnect(connectId)
+      await new AppConnectRepository(storage).setAddresses(connectId, [addressA, addressB])
+
+      expect((await connect()).addresses).toEqual([addressA, addressB])
+    })
+
+    it('stops showing a Core address the user takes away', async () => {
+      const appConnects = new AppConnectRepository(storage)
+
+      await privateAPIClient.approveAppConnect(connectId)
+      await appConnects.setAddresses(connectId, [addressA, addressB])
+      await appConnects.setAddresses(connectId, [addressB])
+
+      expect((await connect()).addresses).toEqual([addressB])
+    })
+
     it('refuses a grant of an identity the wallet does not hold', async () => {
       await expect(privateAPIClient.approveAppConnect(connectId, ['Dxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx']))
         .rejects.toThrow('does not belong to this wallet')
@@ -154,6 +181,13 @@ describe('what a connected website may see', () => {
     it('is not reachable from a page', async () => {
       await expect(call(MessagingMethods.GET_ALL_WALLETS, {}))
         .rejects.toThrow('Could not find handler for method GET_ALL_WALLETS')
+    })
+
+    it('does not let a website widen its own address grant', async () => {
+      await privateAPIClient.approveAppConnect(connectId)
+
+      await expect(call(MessagingMethods.SET_APP_CONNECT_ADDRESSES, { id: connectId, addresses: [addressA] }))
+        .rejects.toThrow('Could not find handler for method SET_APP_CONNECT_ADDRESSES')
     })
   })
 

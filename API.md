@@ -20,6 +20,7 @@ connect (): Promise<WalletInfo>
 interface WalletInfo {
   identities: IdentityInfo[]
   currentIdentity: string | null
+  addresses: string[] // Core (L1) addresses of the wallet
 }
 
 interface IdentityInfo {
@@ -32,6 +33,14 @@ interface IdentityInfo {
 Asks to connect the current origin. Opens an approval popup if the origin has no decision yet, and polls every 500 ms until the user decides.
 
 `currentIdentity` is the wallet's current identity if the site was granted it, otherwise the first granted identity.
+
+`addresses` are the wallet's Core (L1) addresses the user granted this origin, to be paid on or refunded on. The grant is made when the connection is approved and covers the wallet's receiving addresses by default; the user can narrow it or take it back from the extension's connected sites screen, so read it from `connect()` rather than caching it. Change addresses are never granted. It is empty while the connection is pending, and also for a wallet whose Core addresses are not initialized yet.
+
+```js
+const { addresses } = await signer.connect()
+
+const refundAddress = addresses[0] // where the site may send DASH back
+```
 
 **Rejects** with `App connection was rejected` if the user rejects or closes the popup, or with a timeout error after 3 minutes.
 

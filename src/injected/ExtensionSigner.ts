@@ -53,7 +53,7 @@ export class ExtensionSigner {
       throw new Error('App connection was rejected')
     }
 
-    return { currentIdentity: response.currentIdentity, identities: response.identities }
+    return { currentIdentity: response.currentIdentity, identities: response.identities, addresses: response.addresses }
   }
 
   async signAndBroadcast (stateTransition: string): Promise<SignedStateTransitionData> {

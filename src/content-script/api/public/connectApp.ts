@@ -52,9 +52,10 @@ export class ConnectAppHandler implements PublicAPIHandler {
     }
 
     // Nothing about the wallet leaves the extension until the user approves the
-    // connection, and then only the identities they granted.
+    // connection, and then only what they granted.
     const approved = appConnect.status === AppConnectStatus.approved
     const granted = approved ? appConnect.identities : []
+    const grantedAddresses = approved ? appConnect.addresses : []
 
     const identities = (await this.identitiesRepository.getAll())
       .filter(identity => granted.includes(identity.identifier))
@@ -70,6 +71,9 @@ export class ConnectAppHandler implements PublicAPIHandler {
       status: appConnect.status,
       identities: identities.map(identity => ({ identifier: identity.identifier, type: identity.type, proTxHash: identity.proTxHash })),
       currentIdentity,
+      // Stored as the user granted them, so serving them needs no derivation -
+      // which this scope could not do anyway, being free of the SDK.
+      addresses: grantedAddresses,
       network: approved ? await this.storageAdapter.get('network') as string : null
     }
   }
