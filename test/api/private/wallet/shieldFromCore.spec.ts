@@ -6,9 +6,9 @@ jest.mock('../../../../src/utils/assetLockFundingKey', () => ({
   decryptAssetLockFundingKey: jest.fn()
 }))
 
-// Keep the real pshenmic-dpp and only stub the shielded address parsing.
-jest.mock('pshenmic-dpp', () => {
-  const actual = jest.requireActual('pshenmic-dpp')
+// Keep the real shielded module and only stub the address parsing.
+jest.mock('dash-platform-shielded', () => {
+  const actual = jest.requireActual('dash-platform-shielded')
   return {
     ...actual,
     OrchardAddressWASM: {
