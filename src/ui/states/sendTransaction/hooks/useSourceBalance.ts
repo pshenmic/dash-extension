@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { endpointDashDecimals } from '../../../../utils'
-import type { TokenData } from '../../../../types'
+import type { SelectableToken } from '../../../components/controls'
 import type { AddressData } from '../../../components/addresses/types'
 import type { TransferDraft } from '../types'
 
@@ -17,7 +17,7 @@ interface SourceBalanceParams {
   coreBalance: bigint | null
   platformAddresses: AddressData[]
   shieldedBalance: bigint | null
-  token: TokenData | undefined
+  token: SelectableToken | undefined
 }
 
 // Platform address with the largest balance, the one an automatic transfer spends from.

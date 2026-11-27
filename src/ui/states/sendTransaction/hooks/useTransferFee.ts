@@ -14,6 +14,7 @@ import type { PlatformFeeEstimateState } from './usePlatformFeeEstimate'
 export interface TransferFee {
   amount: bigint
   decimals: number
+  payer?: 'identity' | 'shielded'
   // Fee comes out of the amount instead of on top of it.
   takenFromAmount?: boolean
   // Fallback with a safety margin while the estimate is unknown.

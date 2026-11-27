@@ -66,6 +66,21 @@ describe('resolveDirection', () => {
     })
   })
 
+  describe('shielded token preview', () => {
+    const token: AssetId = { ...TOKEN, shieldedPreview: true }
+
+    it('can enter a token pool from Identity and transfer within it', () => {
+      expect(resolveDirection('identity', 'shielded', token, SEED)).toMatchObject({ supported: true, config: { mode: 'tokenShield' } })
+      expect(resolveDirection('shielded', 'shielded', token, SEED)).toMatchObject({ supported: true, config: { mode: 'shieldedTokenTransfer' } })
+    })
+
+    it('limits the preview to a shielded destination and requires address support', () => {
+      expect(supportedTargets('shielded', token, SEED)).toEqual(['shielded'])
+      expect(supportedTargets('identity', token, KEYSTORE)).toEqual([])
+      expect(supportedTargets('core', token, SEED)).toEqual([])
+    })
+  })
+
   describe('keystore wallet', () => {
     it('allows only identity as sender', () => {
       expect(resolveDirection('core', 'core', DASH, KEYSTORE)).toMatchObject({ supported: false, reason: 'noCoreLayer' })

@@ -82,6 +82,33 @@ const WITHDRAWAL = {
   feeSource: 'withdrawal' as const
 }
 
+export const SHIELDED_TOKEN_DETAILS: Partial<Record<TransferMode, DirectionDetails>> = {
+  tokenShield: {
+    ...SINGLE_HASH,
+    hashes: [],
+    confirmLabel: 'Shield',
+    hasProgress: true,
+    successMessage: 'Simulation complete. No funds were moved.',
+    feeSource: 'identityEstimate',
+    infoCard: {
+      title: 'Shield tokens',
+      text: 'Your sender identity and amount are public when tokens enter the pool. Your identity pays the fee in DASH credits.'
+    }
+  },
+  shieldedTokenTransfer: {
+    ...SINGLE_HASH,
+    hashes: [],
+    confirmLabel: 'Send',
+    hasProgress: true,
+    successMessage: 'Simulation complete. No funds were moved.',
+    feeSource: 'shieldedEstimate',
+    infoCard: {
+      title: 'Shielded token transfer',
+      text: 'Tokens stay in their shielded pool. The fee comes from your shielded DASH balance.'
+    }
+  }
+}
+
 // Details of every supported direction; unsupported pairs have no entry.
 export const DIRECTION_DETAILS: Partial<Record<Direction, DirectionDetails>> = {
   'core->core': {

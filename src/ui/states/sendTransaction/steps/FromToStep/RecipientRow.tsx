@@ -81,7 +81,7 @@ export function RecipientRow ({ draft, excludeIdentifier, network, ownCoreAddres
 
   // A typed shielded address also needs a sender that can pay one, not just a supported pair.
   const canSwitchTo = (type: EndpointType): boolean =>
-    type === toType || (canTarget(type) && (type !== 'shielded' || canPayShieldedAddress(draft.from.type)))
+    type === toType || (canTarget(type) && (type !== 'shielded' || canPayShieldedAddress(draft)))
   const unsupportedAddressMessages = canSwitchTo('shielded') ? undefined : { shieldAddress: SHIELDED_SENDER_HINT }
 
   const handleSelect = (result: RecipientSearchResult): void => {

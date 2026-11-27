@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'rea
 import { withAccessControl } from '../../components/auth/withAccessControl'
 import ScreenLoader from '../../components/layout/screens/ScreenLoader'
 import { AssetSelectionMenu } from '../../components/controls'
+import { Banner } from '../../components/cards'
 import { useCoreBalance, usePlatformAddresses, useWalletCapabilities, useWalletPlatformData } from '../../hooks'
 import { locationReturnPath } from '../../types'
 import type { OutletContext } from '../../types'
@@ -29,6 +30,7 @@ import { useOwnCoreAddress } from './hooks/useOwnCoreAddress'
 import { useIdentityHeader } from './hooks/useIdentityHeader'
 import { STEP_INDEX, useStepNavigation, useWizardStep } from './hooks/useWizardStep'
 import { useTransferApi } from './transferApi'
+import { previewTokenFee, previewTokensFor, simulateTokenTransfer } from './shieldedTokenPreview'
 import { WizardHeader } from './components/WizardHeader'
 import { UnfinishedOperationBanners } from './components/UnfinishedOperationBanners'
 import { maxRecipients } from './constants'
@@ -46,9 +48,10 @@ interface SendWizardProps {
   entry: EntryDefaults
   capabilities: TransferCapabilities
   platformAddresses: AddressData[]
+  previewEnabled: boolean
 }
 
-function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps): React.JSX.Element {
+function SendWizard ({ entry, capabilities, platformAddresses, previewEnabled }: SendWizardProps): React.JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const { currentNetwork, currentWallet, currentIdentity, allWallets, availableIdentities, setHeaderComponent, setHeaderConfigOverride } = useOutletContext<OutletContext>()
@@ -66,11 +69,14 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
   const identityId = draft.from.type === 'identity' ? draft.from.identityId : null
   const tokenId = draft.asset.type === 'token' ? draft.asset.tokenId : null
   const { balance: identityBalance, rate, tokensState } = useSendScreenData(identityId, network)
-  const tokens = useMemo(() => tokensState.data ?? [], [tokensState.data])
+  const isPreview = previewEnabled && draft.asset.type === 'token' && draft.asset.shieldedPreview === true
+  const isShieldedSource = draft.from.type === 'shielded'
+  const previewTokens = previewEnabled ? previewTokensFor(draft.from.type) : []
+  const tokens = isShieldedSource ? previewTokens : [...(tokensState.data ?? []), ...previewTokens]
   const token = tokenId != null ? tokens.find(item => item.identifier === tokenId) : undefined
   // Platform Explorer answers faster than DAPI, so it supplies the balances of the identity list.
   const platformData = useWalletPlatformData(availableIdentities, currentNetwork)
-  const shielded = useShieldedSource(draft.from.type === 'shielded', currentNetwork, currentWallet)
+  const shielded = useShieldedSource(isShieldedSource && !isPreview, currentNetwork, currentWallet)
   const core = useCoreBalance(currentWallet, capabilities.hasCoreLayer)
   const coreBalance = core.balance != null ? BigInt(core.balance.balance) : null
 
@@ -85,7 +91,8 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
   const coreEstimate = useCoreTransferEstimate({ api, config, draft, amount, recipientsValid: recipientsCheck.isValid, balance: coreBalance })
   const platformOutputCount = recipientsOpen && overlayCount != null ? overlayCount : recipientCount(draft)
   const platformEstimate = usePlatformFeeEstimate({ api, mode, identityId, sourceAddress: balance.sourceAddress, outputCount: platformOutputCount, balance: balance.amount })
-  const fee = useTransferFee({ config, draft, coreEstimate, platformEstimate, network, shieldedSpendEstimates: shielded.spendEstimates })
+  const networkFee = useTransferFee({ config, draft, coreEstimate, platformEstimate, network, shieldedSpendEstimates: shielded.spendEstimates })
+  const fee = isPreview ? previewTokenFee(draft.from.type) : networkFee
   const knownMax = shieldedMaxAmount(config, shielded.spendEstimates) ?? coreMaxAmount(config, recipientCount(draft), coreEstimate.maxAmountDuffs) ?? platformEstimate.estimate?.maxAmountCredits ?? null
 
   const operation = useTransferOperation()
@@ -112,7 +119,7 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
     knownMin: platformEstimate.estimate?.minAmountCredits ?? null,
     input,
     senderIdentifier: draft.from.type === 'identity' ? draft.from.identityId : balance.sourceAddress,
-    shieldedReady: draft.from.type !== 'shielded' || (shielded.balance != null && !shielded.isWarmingProver),
+    shieldedReady: isPreview || !isShieldedSource || (shielded.balance != null && !shielded.isWarmingProver),
     isResumingFunding: isContinuing
   })
   const { maxAmount, amountError, advancedError, recipientError, received, fromToValid, amountValid } = validation
@@ -141,9 +148,9 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
 
   // Leaves an unknown token for Dash once the identity's tokens are known.
   useEffect(() => {
-    const tokensKnown = tokensState.data != null || tokensState.error != null
+    const tokensKnown = isShieldedSource || isPreview || tokensState.data != null || tokensState.error != null
     if (draft.asset.type === 'token' && tokensKnown && token == null) actions.setAsset({ type: 'dash' })
-  }, [draft.asset, tokensState.data, tokensState.error, token, actions])
+  }, [draft.asset, isPreview, isShieldedSource, tokensState.data, tokensState.error, token, actions])
 
   // Hides the header back button while the transfer runs and on the final screens.
   const isFinal = step === 'result' || step === 'error'
@@ -155,6 +162,13 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
   }, [hideBack, setHeaderConfigOverride])
 
   const handleConfirm = (password: string): void => {
+    if (isPreview) {
+      if (!amountValid || operationState.status !== 'idle') return
+      operation.track(simulateTokenTransfer)
+      goToStep('progress', true)
+      return
+    }
+
     submit(password)
       .then(result => {
         if (result === 'invalidPassword') {
@@ -188,6 +202,10 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
     <div className='screen-content'>
       {!isFinal && <WizardHeader activeStep={STEP_INDEX[step]} isAdvanced={draft.isAdvanced} advancedAvailable={advancedAvailable && step === 'fromTo'} onAdvancedChange={(value) => actions.setAdvanced(value)} />}
 
+      {previewEnabled && !isFinal && (
+        <Banner variant='info' message='Orchard and Sprout are sample tokens. Only sample token transfers are simulated.' />
+      )}
+
       {step === 'fromTo' && (
         <FromToStep
           draft={draft}
@@ -199,7 +217,8 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
           balance={balance}
           rate={rate}
           shielded={shielded}
-          tokens={tokens}
+          showAssets={draft.from.type === 'identity' || (previewEnabled && isShieldedSource)}
+          hasTokens={tokens.length > 0}
           fee={fee}
           network={network}
           ownCoreAddress={ownCoreAddress}
@@ -216,7 +235,7 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
       )}
 
       {step === 'progress' && operationState.status !== 'idle' && (
-        <ProgressStep isRunning={operationState.status === 'running'} onClose={close} />
+        <ProgressStep isRunning={operationState.status === 'running'} isPreview={isPreview} onClose={close} />
       )}
 
       {step === 'amount' && (
@@ -245,6 +264,7 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
           typedAmount={amount}
           rate={rate}
           isSubmitting={isChecking || operationState.status === 'running'}
+          isPreview={isPreview}
           passwordError={passwordError}
           onPasswordChange={() => setPasswordError(null)}
           onConfirm={handleConfirm}
@@ -298,8 +318,12 @@ function SendWizard ({ entry, capabilities, platformAddresses }: SendWizardProps
         isOpen={assetMenuOpen}
         onClose={() => setAssetMenuOpen(false)}
         selectedAsset={tokenId ?? 'credits'}
-        onAssetSelect={(value) => actions.setAsset(value === 'credits' ? { type: 'dash' } : { type: 'token', tokenId: value })}
-        creditsBalance={identityBalance?.toString()}
+        onAssetSelect={(value) => {
+          if (value === 'credits') actions.setAsset({ type: 'dash' })
+          else if (previewTokens.some(item => item.identifier === value)) actions.setAsset({ type: 'token', tokenId: value, shieldedPreview: true })
+          else actions.setAsset({ type: 'token', tokenId: value })
+        }}
+        creditsBalance={(isShieldedSource ? shielded.balance : identityBalance)?.toString()}
         tokens={tokens}
       />
     </div>
@@ -345,7 +369,8 @@ function SendTransactionState (): React.JSX.Element {
     )
   }
 
-  return <SendWizard entry={entry} capabilities={capabilities} platformAddresses={platform.addresses} />
+  const previewEnabled = currentNetwork === 'testnet' && capabilities.hasAddressLayer && searchParams.get('preview') === 'shielded-tokens'
+  return <SendWizard entry={entry} capabilities={capabilities} platformAddresses={platform.addresses} previewEnabled={previewEnabled} />
 }
 
 export default withAccessControl(SendTransactionState, { requireWallet: true })

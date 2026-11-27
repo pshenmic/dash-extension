@@ -117,6 +117,7 @@ export function useTransferSubmit ({ api, mode, draft, amount, sourceAddress, wa
 
   const submit = useCallback(async (password: string): Promise<'started' | 'invalidPassword' | 'ignored'> => {
     if (mode == null || amount == null || inFlightRef.current) return 'ignored'
+    if (draft.asset.type === 'token' && draft.asset.shieldedPreview === true) return 'ignored'
 
     inFlightRef.current = true
     setIsChecking(true)

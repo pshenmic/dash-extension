@@ -13,6 +13,7 @@ export type TransferUnavailableReason =
   | 'noAddressLayer'
   | 'noPlatformAddresses'
   | 'tokenRequiresIdentity'
+  | 'tokenRequiresShieldedSource'
   | 'unsupportedPair'
 
 export type TransferPairResolution =
@@ -32,11 +33,12 @@ const PAIR_MODES: Record<EndpointType, Record<EndpointType, TransferMode>> = {
 
 const toDirection = (from: EndpointType, to: EndpointType): Direction => `${from}->${to}`
 
-const isTokenAsset = (asset: AssetId): boolean => asset.type === 'token'
-
 // Reason the type cannot be the sender, or null when it can.
 export const getSourceUnavailableReason = (type: EndpointType, asset: AssetId, capabilities: TransferCapabilities): TransferUnavailableReason | null => {
-  if (isTokenAsset(asset) && type !== 'identity') return 'tokenRequiresIdentity'
+  if (asset.type === 'token') {
+    if (asset.shieldedPreview === true && type !== 'identity' && type !== 'shielded') return 'tokenRequiresShieldedSource'
+    if (asset.shieldedPreview !== true && type !== 'identity') return 'tokenRequiresIdentity'
+  }
   if (type === 'core' && !capabilities.hasCoreLayer) return 'noCoreLayer'
   if ((type === 'platformAddress' || type === 'shielded') && !capabilities.hasAddressLayer) return 'noAddressLayer'
   if (type === 'platformAddress' && !capabilities.hasPlatformAddresses) return 'noPlatformAddresses'
@@ -50,7 +52,13 @@ export const resolveTransferPair = (from: EndpointType, to: EndpointType, asset:
 
   if (sourceReason != null) return { supported: false, direction, reason: sourceReason }
 
-  if (isTokenAsset(asset)) {
+  if (asset.type === 'token' && asset.shieldedPreview === true) {
+    if (to !== 'shielded') return { supported: false, direction, reason: 'unsupportedPair' }
+    if (!capabilities.hasAddressLayer) return { supported: false, direction, reason: 'noAddressLayer' }
+    return { supported: true, direction, mode: from === 'identity' ? 'tokenShield' : 'shieldedTokenTransfer' }
+  }
+
+  if (asset.type === 'token') {
     return to === 'identity'
       ? { supported: true, direction, mode: 'tokenTransfer' }
       : { supported: false, direction, reason: 'tokenRequiresIdentity' }
@@ -73,12 +81,13 @@ export const fallbackTargetType = (from: EndpointType, current: EndpointType, as
 }
 
 // Whether the sender can pay a typed shielded address; Platform addresses shield only into the own pool.
-export const canPayShieldedAddress = (from: EndpointType): boolean =>
-  from === 'core' || from === 'shielded'
+export const canPayShieldedAddress = (draft: TransferDraft): boolean =>
+  draft.from.type === 'core' || draft.from.type === 'shielded' ||
+  (draft.from.type === 'identity' && draft.asset.type === 'token' && draft.asset.shieldedPreview === true)
 
 // Whether the sender can shield to a typed shielded address instead of its own balance.
 export const canShieldToOthers = (draft: TransferDraft): boolean =>
-  draft.to.type === 'shielded' && draft.from.type === 'core'
+  draft.to.type === 'shielded' && draft.from.type !== 'shielded' && canPayShieldedAddress(draft)
 
 // Whether the To side is the wallet's own shielded balance with no address to enter.
 export const isShieldToMyself = (draft: TransferDraft): boolean =>

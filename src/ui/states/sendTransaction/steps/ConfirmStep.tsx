@@ -23,13 +23,14 @@ interface ConfirmStepProps {
   typedAmount: bigint | null
   rate: number | null
   isSubmitting: boolean
+  isPreview: boolean
   passwordError: string | null
   onPasswordChange: () => void
   onConfirm: (password: string) => void
 }
 
 // Step 3 of the send wizard: transfer details, password and the action button.
-export function ConfirmStep ({ draft, config, amount, balance, fee, received, isPrepaid, typedAmount, rate, isSubmitting, passwordError, onPasswordChange, onConfirm }: ConfirmStepProps): React.JSX.Element {
+export function ConfirmStep ({ draft, config, amount, balance, fee, received, isPrepaid, typedAmount, rate, isSubmitting, isPreview, passwordError, onPasswordChange, onConfirm }: ConfirmStepProps): React.JSX.Element {
   const [password, setPassword] = useState('')
   const isProving = SHIELDED_MODES.includes(config.mode) || config.mode === 'coreShield'
   const isCrossLayerFromCore = draft.from.type === 'core' && draft.to.type !== 'core'
@@ -56,14 +57,16 @@ export function ConfirmStep ({ draft, config, amount, balance, fee, received, is
       <Banner variant='warning' message={isAmountReplaced ? interruptedTransferMessage(formatDashAmount(amount, balance.decimals)) : null} />
       <Banner variant='warning' message={WITHDRAW_WARNINGS[config.mode] ?? null} />
 
-      <PasswordField
-        label='Password'
-        value={password}
-        onChange={(value) => { setPassword(value); onPasswordChange() }}
-        placeholder='Your Password'
-        error={passwordError}
-        variant='outlined'
-      />
+      {!isPreview && (
+        <PasswordField
+          label='Password'
+          value={password}
+          onChange={(value) => { setPassword(value); onPasswordChange() }}
+          placeholder='Your Password'
+          error={passwordError}
+          variant='outlined'
+        />
+      )}
 
       {isCrossLayerFromCore && <Text size='xs' dim className='text-center -mb-3'>{KEEP_OPEN_MESSAGE}</Text>}
 
@@ -71,10 +74,10 @@ export function ConfirmStep ({ draft, config, amount, balance, fee, received, is
         colorScheme='brand'
         size='xl'
         className='w-full'
-        disabled={isSubmitting || password === ''}
+        disabled={isSubmitting || (!isPreview && password === '')}
         onClick={() => onConfirm(password)}
       >
-        {isSubmitting ? (isProving ? 'Building proof - keep this open...' : 'Sending...') : config.confirmLabel}
+        {isPreview ? 'Simulate transfer' : isSubmitting ? (isProving ? 'Building proof - keep this open...' : 'Sending...') : config.confirmLabel}
       </Button>
     </div>
   )
