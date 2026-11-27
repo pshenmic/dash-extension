@@ -6,13 +6,14 @@ import type { ReceiveTarget } from './types'
 
 interface ReceiveCardProps {
   target: ReceiveTarget
+  compact?: boolean
 }
 
 /** QR plus the full address, the two things a sender actually needs. */
-export function ReceiveCard ({ target }: ReceiveCardProps): React.JSX.Element {
+export function ReceiveCard ({ target, compact = false }: ReceiveCardProps): React.JSX.Element {
   return (
-    <div className='flex flex-col items-center gap-4 rounded-[14px] px-[15px] py-5 bg-[rgba(12,28,51,0.04)]'>
-      <div className='p-4 rounded-2xl bg-white'>
+    <div className={`flex flex-col items-center rounded-[14px] px-[15px] bg-[rgba(12,28,51,0.04)] ${compact ? 'gap-3 py-4' : 'gap-4 py-5'}`}>
+      <div className={`rounded-2xl bg-white ${compact ? 'p-3' : 'p-4'}`}>
         <QRCodeSVG
           value={target.value}
           fgColor='#4C7EFF'

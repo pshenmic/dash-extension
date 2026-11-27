@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, ProgressStepBar } from 'dash-ui-kit/react'
+import { Button, Identifier, ProgressStepBar } from 'dash-ui-kit/react'
 import { TitleBlock } from '../../../components/layout/TitleBlock'
 import { IdentityPreview } from '../../../components/Identities'
 import type { IdentityPreviewData } from '../../../types'
@@ -7,29 +7,27 @@ import type { IdentityPreviewData } from '../../../types'
 interface Stage5SuccessProps {
   stage: number
   identity: IdentityPreviewData | null
+  identityId?: string
   onDone: () => void
 }
 
-export function Stage5Success ({ stage, identity, onDone }: Stage5SuccessProps): React.JSX.Element {
+export function Stage5Success ({ stage, identity, identityId, onDone }: Stage5SuccessProps): React.JSX.Element {
   return (
-    <div className='flex flex-col h-full'>
+    <div className='flex flex-1 flex-col gap-4'>
       <TitleBlock
-        title='Congratulations!'
-        description="Now you have your first Identity and you're ready to dive into the space of truly decentralized Web3 applications. Check out latest Dash Platform DApps on dashdapps.com"
-        logoSize='3rem'
-        showLogo
-        containerClassName='mb-0'
+        variant='screen'
+        title='Identity registered'
+        description='Your identity is ready to use on Dash Platform.'
       />
 
       {identity != null && (
-        <div className='mt-3'>
-          <IdentityPreview identity={identity} />
-        </div>
+        <IdentityPreview identity={identity} />
+      )}
+      {identity == null && identityId != null && (
+        <Identifier avatar highlight='both' middleEllipsis edgeChars={8}>{identityId}</Identifier>
       )}
 
-      <div className='flex-1' />
-
-      <div className='pb-[15px] flex flex-col gap-4 mt-8'>
+      <div className='mt-auto flex flex-col gap-3'>
         <Button
           colorScheme='brand'
           className='w-full'

@@ -77,7 +77,6 @@ function ChooseWalletType (): React.JSX.Element {
           <TitleBlock
             title='Choose Wallet Type'
             description='You can create your wallet using these options, more options will come in future updates.'
-            titleClassName='font-extrabold text-gray-900 leading-tight'
           />
         </div>
       </div>

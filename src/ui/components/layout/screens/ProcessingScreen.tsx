@@ -7,6 +7,7 @@ interface ProcessingScreenProps {
   stage: number
   totalSteps: number
   title: React.ReactNode
+  titleVariant?: 'default' | 'screen'
   description: string
 }
 
@@ -14,12 +15,13 @@ export function ProcessingScreen ({
   stage,
   totalSteps,
   title,
+  titleVariant = 'default',
   description
 }: ProcessingScreenProps): React.JSX.Element {
   const coinBagelImage = useStaticAsset('coin_bagel.png')
 
   return (
-    <div className='flex flex-col h-full relative'>
+    <div className={`relative flex flex-col ${titleVariant === 'screen' ? 'flex-1' : 'h-full'}`}>
       <div className='absolute right-[-1rem] top-[100%] w-full h-[240px] overflow-hidden pointer-events-none translate-y-[-100%]'>
         <img src={coinBagelImage} alt='' className='w-[552px] h-[513px] object-cover object-left' />
       </div>
@@ -33,12 +35,11 @@ export function ProcessingScreen ({
         }}
       />
 
-      <div className='relative z-10 flex flex-col h-full'>
+      <div className={`relative z-10 flex flex-col ${titleVariant === 'screen' ? 'flex-1 gap-4' : 'h-full'}`}>
         <TitleBlock
+          variant={titleVariant}
           title={title}
           description={description}
-          logoSize='3rem'
-          showLogo
           containerClassName='mb-0'
         />
 

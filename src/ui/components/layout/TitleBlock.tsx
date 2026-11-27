@@ -1,5 +1,5 @@
 import React from 'react'
-import { DashLogo, Heading, Text } from 'dash-ui-kit/react'
+import { DashLogo, Text } from 'dash-ui-kit/react'
 
 interface TitleBlockProps {
   title: string | React.ReactNode
@@ -7,10 +7,9 @@ interface TitleBlockProps {
   logoSize?: string
   showLogo?: boolean
   centered?: boolean
-  titleSize?: 'xl' | '2xl' | '3xl'
   titleClassName?: string
   containerClassName?: string
-  // 'screen' is the large title of the redesigned screens: no logo, no bottom margin, muted xs description.
+  // The screen variant uses compact spacing and hides the logo by default.
   variant?: 'default' | 'screen'
   // Element shown at the right of the title, e.g. a type chip.
   badge?: React.ReactNode
@@ -24,7 +23,6 @@ export const TitleBlock: React.FC<TitleBlockProps> = ({
   logoSize = '3rem',
   showLogo,
   centered = false,
-  titleSize = '2xl',
   titleClassName,
   containerClassName,
   variant = 'default',
@@ -38,9 +36,7 @@ export const TitleBlock: React.FC<TitleBlockProps> = ({
     ? `${baseContainerClass} ${containerClassName}`
     : baseContainerClass
 
-  const heading = isScreen
-    ? <Text as='h1' className={`${SCREEN_TITLE_CLASS} ${titleClassName ?? ''}`}>{title}</Text>
-    : <Heading as='h1' size={titleSize} className={titleClassName}>{title}</Heading>
+  const heading = <Text as='h1' className={`${SCREEN_TITLE_CLASS} ${titleClassName ?? ''}`}>{title}</Text>
 
   return (
     <div className={containerClass}>

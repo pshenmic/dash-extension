@@ -14,6 +14,7 @@ interface TransactionHashBlockProps {
   showActions?: boolean
   label?: string
   shadow?: boolean
+  compactSpacing?: boolean
   colorScheme?: ValueCardProps['colorScheme']
   // Overrides the Platform explorer link, e.g. for a Core transaction.
   explorerUrl?: string
@@ -28,6 +29,7 @@ export default function TransactionHashBlock ({
   label = 'Hash',
   showActions = true,
   shadow = false,
+  compactSpacing = false,
   colorScheme = 'white',
   explorerUrl
 }: TransactionHashBlockProps): React.JSX.Element {
@@ -37,7 +39,7 @@ export default function TransactionHashBlock ({
   }
 
   return (
-    <ValueCard colorScheme={colorScheme} border={false} size='xl' className={`${shadow ? 'dash-shadow-lg ' : ''}flex-col gap-4 items-start`}>
+    <ValueCard colorScheme={colorScheme} border={false} size='xl' className={`${shadow ? 'dash-shadow-lg ' : ''}flex-col items-start ${compactSpacing ? 'gap-3 !py-3' : 'gap-4'}`}>
       {showHeader && (
         <div className='flex items-center gap-2'>
           <div className='flex items-center justify-center h-[1.875rem] w-[1.875rem] rounded-full bg-dash-primary-dark-blue/[0.03]'>

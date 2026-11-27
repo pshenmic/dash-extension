@@ -1,6 +1,7 @@
 import React from 'react'
 import { Stepper, Switch, Text } from 'dash-ui-kit/react'
 import type { StepperStatus } from 'dash-ui-kit/react'
+import { TitleBlock } from '../../../components/layout/TitleBlock'
 import { WIZARD_STEP_LABELS } from '../constants'
 
 type TransferView = 'simple' | 'advanced'
@@ -29,17 +30,18 @@ const stepStatus = (index: number, activeStep: number, isAdvanced: boolean): Ste
 export function WizardHeader ({ activeStep, isAdvanced, advancedAvailable, onAdvancedChange }: WizardHeaderProps): React.JSX.Element {
   return (
     <div className='flex flex-col gap-4'>
-      <div className='flex items-center justify-between gap-3'>
-        <Text className='text-dash-primary-dark-blue !text-[2.125rem] !font-medium !leading-[1.25] tracking-[-0.03em]'>
-          Send
-        </Text>
-        <Switch<TransferView>
-          options={viewOptions(advancedAvailable)}
-          value={isAdvanced ? 'advanced' : 'simple'}
-          onChange={(view) => onAdvancedChange(view === 'advanced')}
-          size='sm'
-        />
-      </div>
+      <TitleBlock
+        variant='screen'
+        title='Send'
+        badge={
+          <Switch<TransferView>
+            options={viewOptions(advancedAvailable)}
+            value={isAdvanced ? 'advanced' : 'simple'}
+            onChange={(view) => onAdvancedChange(view === 'advanced')}
+            size='sm'
+          />
+        }
+      />
 
       <Text size='xs' weight='medium' dim>
         Move funds between your{' '}

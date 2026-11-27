@@ -22,6 +22,10 @@ export const FUNDING_TX_TIMEOUT_MS = 90 * 1000
 // Confirmation is best-effort — the identity already exists after broadcast.
 export const REGISTRATION_CONFIRM_TIMEOUT_MS = 8000
 export const TXID_HEX_LENGTH = 64
+export const TXID_PATTERN = new RegExp(`^[a-f0-9]{${TXID_HEX_LENGTH}}$`, 'i')
+
+// Minimum amount offered by the identity registration UI, in duffs.
+export const MIN_REGISTRATION_DUFFS = 10_000_000n
 
 // Smallest funding payment a top-up can be built from, in duffs.
 // Platform needs ~50500 duffs of credits to process the top-up, plus the asset lock tx fee.

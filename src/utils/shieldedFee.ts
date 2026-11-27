@@ -1,4 +1,4 @@
-import type { RecoveredNoteWASM } from 'pshenmic-dpp'
+import type { RecoveredNoteWASM } from 'dash-platform-shielded'
 import { ShieldedSpendKind } from '../types/ShieldedSpendKind'
 import {
   SHIELDED_MAX_SPEND_NOTES,

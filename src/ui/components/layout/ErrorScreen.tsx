@@ -4,6 +4,7 @@ import { TitleBlock } from '../layout/TitleBlock'
 
 interface ErrorScreenProps {
   title: React.ReactNode
+  titleVariant?: 'default' | 'screen'
   error: string | null
   defaultError?: string
   totalSteps: number
@@ -14,6 +15,7 @@ interface ErrorScreenProps {
 
 export function ErrorScreen ({
   title,
+  titleVariant = 'default',
   error,
   defaultError = 'An unexpected error occurred.',
   totalSteps,
@@ -22,12 +24,11 @@ export function ErrorScreen ({
   onReturnBack
 }: ErrorScreenProps): React.JSX.Element {
   return (
-    <div className='flex flex-col h-full pt-[90px]'>
+    <div className={`flex flex-col ${titleVariant === 'screen' ? 'flex-1 gap-4' : 'h-full pt-[90px]'}`}>
       <TitleBlock
+        variant={titleVariant}
         title={title}
         description={error ?? defaultError}
-        logoSize='3rem'
-        showLogo
         containerClassName='!mb-0'
       />
 

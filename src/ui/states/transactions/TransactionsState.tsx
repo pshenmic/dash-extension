@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
-import { Heading, Text } from 'dash-ui-kit/react'
+import { Text } from 'dash-ui-kit/react'
 import { withAccessControl } from '../../components/auth/withAccessControl'
+import { TitleBlock } from '../../components/layout/TitleBlock'
 import { TransactionsFooter, TransactionsList } from '../../components/transactions'
 import {
   useExtensionAPI,
@@ -110,7 +111,7 @@ function TransactionsState (): React.JSX.Element {
   return (
     <div className='flex flex-col gap-4'>
       <div className='flex flex-col gap-1'>
-        <Heading as='h1' size='2xl'>Transactions</Heading>
+        <TitleBlock variant='screen' title='Transactions' />
         <Text size='sm' weight='medium' className='!text-dash-primary-dark-blue/48 !tracking-[-0.03em]'>
           {counter}
         </Text>

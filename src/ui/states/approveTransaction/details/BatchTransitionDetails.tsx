@@ -26,7 +26,7 @@ export function BatchTransitionDetails ({ data }: BatchTransitionDetailsProps): 
   return (
     <div className='flex flex-col gap-2.5'>
       <TransactionDetailsCard title='Owner ID'>
-        <Identifier className='!text-[1.25rem]' avatar copyButton middleEllipsis edgeChars={5}>
+        <Identifier size='xs' avatar copyButton linesAdjustment={false}>
           {data.ownerId}
         </Identifier>
       </TransactionDetailsCard>
