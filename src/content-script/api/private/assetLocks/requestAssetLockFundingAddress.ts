@@ -7,6 +7,8 @@ import { RequestAssetLockFundingAddressPayload } from '../../../../types/message
 import { DashPlatformSDK } from 'dash-platform-sdk'
 import { PrivateKeyWASM } from 'dash-platform-sdk/types'
 import { StorageAdapter } from '../../../storage/storageAdapter'
+import { RepositoryScope } from '../../../../types/RepositoryScope'
+import { validateRepositoryScopePayload } from '../../../../utils/validateRepositoryScopePayload'
 import { encrypt } from 'eciesjs'
 import { bytesToHex, generateRandomHex, hexToBytes } from '../../../../utils'
 
@@ -30,10 +32,20 @@ export class RequestAssetLockFundingAddressHandler implements APIHandler {
 
   async handle (event: EventData): Promise<RequestAssetLockFundingAddressResponse> {
     const payload: RequestAssetLockFundingAddressPayload = event.payload ?? {}
-    const wallet = await this.walletRepository.getCurrent()
+
+    // The address is stored under (network, wallet), and the operation that
+    // spends its deposit looks it up under the pair it is given - so both must
+    // agree. Scope the repository to the pair the caller names, falling back to
+    // a single snapshot of the current selection.
+    const scope = await this.resolveScope(payload)
+
+    const walletRepository = this.walletRepository.forScope(scope)
+    const assetLockFundingAddressesRepository = this.assetLockFundingAddressesRepository.forScope(scope)
+
+    const wallet = await walletRepository.getCurrent()
 
     if (wallet == null) {
-      throw new Error('Wallet is not chosen')
+      throw new Error(`Wallet ${scope.walletId} does not exist on ${scope.network}`)
     }
 
     // Identity registration is what this handler was written for, so a caller
@@ -45,12 +57,12 @@ export class RequestAssetLockFundingAddressHandler implements APIHandler {
     // money and silently ignore the amount they asked for.
     const recipient = payload.recipient
 
-    const existingUnused = await this.assetLockFundingAddressesRepository.findUnused(purpose, recipient)
+    const existingUnused = await assetLockFundingAddressesRepository.findUnused(purpose, recipient)
 
     if (existingUnused != null) {
       if (recipient != null) {
         // An entry with no owner predates reservation; claim it on the way out.
-        await this.assetLockFundingAddressesRepository.bindToRecipient(existingUnused.address, recipient)
+        await assetLockFundingAddressesRepository.bindToRecipient(existingUnused.address, recipient)
       }
 
       return { address: existingUnused.address }
@@ -66,7 +78,7 @@ export class RequestAssetLockFundingAddressHandler implements APIHandler {
     const address = this.sdk.keyPair.p2pkhAddress(privateKeyWASM.getPublicKey().bytes(), wallet.network)
     const encryptedPrivateKey = bytesToHex(encrypt(passwordPublicKey, hexToBytes(privateKeyWASM.hex())))
 
-    await this.assetLockFundingAddressesRepository.create({
+    await assetLockFundingAddressesRepository.create({
       address,
       encryptedPrivateKey,
       used: false,
@@ -77,6 +89,22 @@ export class RequestAssetLockFundingAddressHandler implements APIHandler {
     return { address }
   }
 
+  // Same contract as REQUEST_TOP_UP_FUNDING_ADDRESS: the caller names the pair
+  // explicitly, and one that does not gets the current selection, read once.
+  private async resolveScope (payload: RequestAssetLockFundingAddressPayload): Promise<RepositoryScope> {
+    if (payload.walletId != null && payload.network != null) {
+      return { network: payload.network, walletId: payload.walletId }
+    }
+
+    const currentWallet = await this.walletRepository.getCurrent()
+
+    if (currentWallet == null) {
+      throw new Error('Wallet is not chosen')
+    }
+
+    return { network: currentWallet.network, walletId: currentWallet.walletId }
+  }
+
   validatePayload (payload: RequestAssetLockFundingAddressPayload): null | string {
     if (payload?.purpose != null && !['registration', 'fundAddress', 'shield'].includes(payload.purpose)) {
       return "purpose must be 'registration', 'fundAddress' or 'shield'"
@@ -85,6 +113,6 @@ export class RequestAssetLockFundingAddressHandler implements APIHandler {
       return 'recipient must be a non-empty string when provided'
     }
 
-    return null
+    return validateRepositoryScopePayload(payload ?? {})
   }
 }

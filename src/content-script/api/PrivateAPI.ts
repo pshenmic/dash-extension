@@ -237,7 +237,8 @@ export class PrivateAPI extends MessageDispatcher {
         assetLockFunding,
         requestAssetLockFundingAddress,
         registerIdentity,
-        this.sdk
+        this.sdk,
+        this.coreSDK
       ),
       [MessagingMethods.TOP_UP_IDENTITY]: topUpIdentity,
       [MessagingMethods.TOP_UP_IDENTITY_FROM_WALLET]: new TopUpIdentityFromWalletHandler(

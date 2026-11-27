@@ -424,8 +424,8 @@ export class PrivateAPIClient {
   // `purpose` keeps the pools apart: 'fundAddress' never hands out the address
   // an unfinished identity registration is waiting on. Defaults to
   // 'registration'.
-  async requestAssetLockFundingAddress (purpose?: RequestAssetLockFundingAddressPayload['purpose']): Promise<RequestAssetLockFundingAddressResponse> {
-    const payload: RequestAssetLockFundingAddressPayload = { purpose }
+  async requestAssetLockFundingAddress (purpose?: RequestAssetLockFundingAddressPayload['purpose'], walletId?: string, network?: NetworkType): Promise<RequestAssetLockFundingAddressResponse> {
+    const payload: RequestAssetLockFundingAddressPayload = { purpose, walletId, network }
 
     return await this._rpcCall(
       MessagingMethods.REQUEST_ASSET_LOCK_FUNDING_ADDRESS,
@@ -445,12 +445,16 @@ export class PrivateAPIClient {
   async registerIdentity (
     assetLockFundingAddress: string,
     assetLockFundingTxid: string,
-    password: string
+    password: string,
+    walletId?: string,
+    network?: NetworkType
   ): Promise<RegisterIdentityResponse> {
     const payload: RegisterIdentityPayload = {
       assetLockFundingAddress,
       assetLockFundingTxid,
-      password
+      password,
+      walletId,
+      network
     }
 
     return await this._rpcCall(MessagingMethods.REGISTER_IDENTITY, payload, BLOCKCHAIN_MESSAGING_TIMEOUT)
@@ -816,8 +820,8 @@ export class PrivateAPIClient {
   // address, pays it from the wallet's unspent outputs and creates the identity
   // from that deposit. Safe to call again after an interruption - it continues
   // from the deposit already on L1 instead of paying twice.
-  async registerIdentityFromWallet (amountDuffs: string, password: string): Promise<RegisterIdentityFromWalletResponse> {
-    const payload: RegisterIdentityFromWalletPayload = { amountDuffs, password }
+  async registerIdentityFromWallet (amountDuffs: string, password: string, walletId?: string, network?: NetworkType): Promise<RegisterIdentityFromWalletResponse> {
+    const payload: RegisterIdentityFromWalletPayload = { amountDuffs, password, walletId, network }
 
     return await this._rpcCall(MessagingMethods.REGISTER_IDENTITY_FROM_WALLET, payload, BLOCKCHAIN_MESSAGING_TIMEOUT)
   }

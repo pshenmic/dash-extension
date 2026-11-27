@@ -1,4 +1,5 @@
 import { AssetLockFundingPurpose } from '../../../content-script/storage/storageSchema'
+import { NetworkType } from '../../NetworkType'
 
 export interface RequestAssetLockFundingAddressPayload {
   // What the address is for. Addresses are handed out per purpose, so a deposit
@@ -11,4 +12,9 @@ export interface RequestAssetLockFundingAddressPayload {
   // operation interrupted after paying cannot have its deposit handed to the
   // next one. A registration creates its recipient and names none.
   recipient?: string
+  // The (network, wallet) the address is issued for. Optional, same contract
+  // as RequestTopUpFundingAddressPayload: the address is stored under this
+  // pair, so it must match the one the operation that spends it is given.
+  walletId?: string
+  network?: NetworkType
 }
