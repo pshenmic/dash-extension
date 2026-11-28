@@ -98,6 +98,10 @@ import { ShieldFromPlatformAddressHandler } from './private/wallet/shieldFromPla
 import { SendShieldedTransferHandler } from './private/wallet/sendShieldedTransfer'
 import { UnshieldToPlatformAddressHandler } from './private/wallet/unshieldToPlatformAddress'
 import { WithdrawShieldedToCoreHandler } from './private/wallet/withdrawShieldedToCore'
+import { GetShieldedTokenBalanceHandler } from './private/wallet/getShieldedTokenBalance'
+import { ShieldTokenHandler } from './private/wallet/shieldToken'
+import { UnshieldTokenHandler } from './private/wallet/unshieldToken'
+import { SendShieldedTokenTransferHandler } from './private/wallet/sendShieldedTokenTransfer'
 
 /**
  * Handlers for a messages within extension context
@@ -302,7 +306,11 @@ export class PrivateAPI extends MessageDispatcher {
       [MessagingMethods.SHIELD_FROM_PLATFORM_ADDRESS]: new ShieldFromPlatformAddressHandler(walletRepository, this.sdk, shielded),
       [MessagingMethods.SEND_SHIELDED_TRANSFER]: new SendShieldedTransferHandler(walletRepository, this.sdk, shielded),
       [MessagingMethods.UNSHIELD_TO_PLATFORM_ADDRESS]: new UnshieldToPlatformAddressHandler(walletRepository, this.sdk, shielded),
-      [MessagingMethods.WITHDRAW_SHIELDED_TO_CORE]: new WithdrawShieldedToCoreHandler(walletRepository, this.sdk, shielded)
+      [MessagingMethods.WITHDRAW_SHIELDED_TO_CORE]: new WithdrawShieldedToCoreHandler(walletRepository, this.sdk, shielded),
+      [MessagingMethods.GET_SHIELDED_TOKEN_BALANCE]: new GetShieldedTokenBalanceHandler(walletRepository, this.sdk, shielded),
+      [MessagingMethods.SHIELD_TOKEN]: new ShieldTokenHandler(walletRepository, identitiesRepository, keypairRepository, this.sdk, shielded),
+      [MessagingMethods.UNSHIELD_TOKEN]: new UnshieldTokenHandler(walletRepository, identitiesRepository, keypairRepository, this.sdk, shielded),
+      [MessagingMethods.SEND_SHIELDED_TOKEN_TRANSFER]: new SendShieldedTokenTransferHandler(walletRepository, identitiesRepository, keypairRepository, this.sdk, shielded)
     }
   }
 }

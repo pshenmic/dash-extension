@@ -43,6 +43,14 @@ import { SendShieldedTransferResponse } from './messages/response/SendShieldedTr
 import { UnshieldToPlatformAddressPayload } from './messages/payloads/UnshieldToPlatformAddressPayload'
 import { UnshieldToPlatformAddressResponse } from './messages/response/UnshieldToPlatformAddressResponse'
 import { WithdrawShieldedToCorePayload } from './messages/payloads/WithdrawShieldedToCorePayload'
+import { GetShieldedTokenBalancePayload } from './messages/payloads/GetShieldedTokenBalancePayload'
+import { ShieldTokenPayload } from './messages/payloads/ShieldTokenPayload'
+import { UnshieldTokenPayload } from './messages/payloads/UnshieldTokenPayload'
+import { SendShieldedTokenTransferPayload } from './messages/payloads/SendShieldedTokenTransferPayload'
+import { GetShieldedTokenBalanceResponse } from './messages/response/GetShieldedTokenBalanceResponse'
+import { ShieldTokenResponse } from './messages/response/ShieldTokenResponse'
+import { UnshieldTokenResponse } from './messages/response/UnshieldTokenResponse'
+import { SendShieldedTokenTransferResponse } from './messages/response/SendShieldedTokenTransferResponse'
 import { WithdrawShieldedToCoreResponse } from './messages/response/WithdrawShieldedToCoreResponse'
 import { GetPlatformAddressesResponse } from './messages/response/GetPlatformAddressesResponse'
 import { GetPlatformAddressesInfosPayload } from './messages/payloads/GetPlatformAddressesInfosPayload'
@@ -753,6 +761,30 @@ export class PrivateAPIClient {
     const payload: WithdrawShieldedToCorePayload = { toCoreAddress, amountCredits, password, account, memo }
 
     return await this._rpcCall(MessagingMethods.WITHDRAW_SHIELDED_TO_CORE, payload, SHIELDED_PROVE_TIMEOUT)
+  }
+
+  // Tokens in their own shielded pool. Every token has a pool of its own, so these
+  // all name a token id; the pool's data contract and position are resolved from it.
+  async getShieldedTokenBalance (tokenId: string, password: string, account?: number): Promise<GetShieldedTokenBalanceResponse> {
+    const payload: GetShieldedTokenBalancePayload = { tokenId, password, account }
+
+    return await this._rpcCall(MessagingMethods.GET_SHIELDED_TOKEN_BALANCE, payload)
+  }
+
+  // Token balance -> the token's pool. Takes the payload whole: a token action names
+  // the identity that signs it and the key it signs with, on top of the amount.
+  async shieldToken (params: ShieldTokenPayload): Promise<ShieldTokenResponse> {
+    return await this._rpcCall(MessagingMethods.SHIELD_TOKEN, params, SHIELDED_PROVE_TIMEOUT)
+  }
+
+  // The token's pool -> an identity's token balance, its own by default.
+  async unshieldToken (params: UnshieldTokenPayload): Promise<UnshieldTokenResponse> {
+    return await this._rpcCall(MessagingMethods.UNSHIELD_TOKEN, params, SHIELDED_PROVE_TIMEOUT)
+  }
+
+  // Pool -> pool inside one token: the private transfer itself.
+  async sendShieldedTokenTransfer (params: SendShieldedTokenTransferPayload): Promise<SendShieldedTokenTransferResponse> {
+    return await this._rpcCall(MessagingMethods.SEND_SHIELDED_TOKEN_TRANSFER, params, SHIELDED_PROVE_TIMEOUT)
   }
 
   async _rpcCall<T>(method: string, payload?: object, timeoutMs: number = MESSAGING_TIMEOUT): Promise<T> {
