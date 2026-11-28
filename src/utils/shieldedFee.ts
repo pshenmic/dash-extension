@@ -73,6 +73,28 @@ export const selectShieldedNotes = (spendable: RecoveredNoteWASM[], amountCredit
   throw new Error('Insufficient shielded balance for this amount plus fee')
 }
 
+// Notes covering `amount` out of a token pool, largest first. A token spend's fee is
+// paid by the identity that signs it, never out of the token notes themselves, so
+// nothing is reserved on top of the amount.
+export const selectTokenNotes = (spendable: RecoveredNoteWASM[], amount: bigint): ShieldedNoteSelection => {
+  const sorted = sortByValueDesc(spendable)
+
+  let total = 0n
+  for (let count = 1; count <= sorted.length; count++) {
+    total += sorted[count - 1].note.value
+
+    if (total >= amount) {
+      if (count > SHIELDED_MAX_SPEND_NOTES) {
+        throw new Error(`This spend requires ${count} notes, over the ${SHIELDED_MAX_SPEND_NOTES}-note limit per shielded transaction - consolidate notes first`)
+      }
+
+      return { notes: sorted.slice(0, count), feeCredits: 0n }
+    }
+  }
+
+  throw new Error('Insufficient shielded token balance for this amount')
+}
+
 // The largest amount a single spend can send: across every note count up to the
 // cap, the value of the largest notes minus the fee for spending them. Zero, with
 // no notes, when no set of notes covers its own fee.

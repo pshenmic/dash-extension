@@ -1,6 +1,6 @@
 import { DashPlatformSDK } from 'dash-platform-sdk'
 import { ShieldedEncryptedNote, ShieldedNullifierStatus } from 'dash-platform-sdk/types'
-import { StateTransitionWASM } from 'pshenmic-dpp'
+import { IdentifierWASM, ShieldedMemoWASM, StateTransitionWASM } from 'pshenmic-dpp'
 import { DashPlatformShielded, OrchardAddressWASM, RecoveredNoteWASM, SpendableNoteWASM } from 'dash-platform-shielded'
 import { StorageAdapter } from '../storage/storageAdapter'
 import { ShieldedNotesRepository } from '../repository/ShieldedNotesRepository'
@@ -10,9 +10,10 @@ import { NetworkType } from '../../types/NetworkType'
 import { ShieldedAddressBalance, ShieldedNote, ShieldedNotesAccount, ShieldedStoredAddress, ShieldedSyncPhase } from '../../types/ShieldedNotes'
 import { Network } from '../../types/enums/Network'
 import { ShieldedSpendKind } from '../../types/ShieldedSpendKind'
+import { ShieldedTokenPool, ShieldedTokenSigner } from '../../types/ShieldedTokens'
 import { PLATFORM_ADDRESS_COIN_TYPE, SHIELDED_MEMO_BYTES, SHIELDED_NOTES_PAGE_SIZE, SHIELDED_NULLIFIER_QUERY_LIMIT } from '../../constants'
 import { ShieldedSyncState } from '../../types/messages/response/GetShieldedSyncStateResponse'
-import { bytesToHex, decryptMnemonic, hexToBytes, selectShieldedNotes, utf8ToBytes } from '../../utils'
+import { bytesToHex, decryptMnemonic, hexToBytes, selectShieldedNotes, selectTokenNotes, utf8ToBytes } from '../../utils'
 
 // What every network-bound copy of the service shares: one SDK per extra network
 // and the in-memory sync phases.
@@ -29,6 +30,14 @@ export interface UnspentShieldedNotes {
   // The whole note set: witnessing the selected notes needs it.
   allNotes: ShieldedEncryptedNote[]
   unspent: RecoveredNoteWASM[]
+}
+
+// A token spend as the builder needs it: the pool notes it spends, and the seed and
+// account that own them. The seed re-derives the spending key inside the builder.
+export interface ShieldedTokenSpendContext {
+  spend: ShieldedSpendInputs
+  seed: Uint8Array
+  account: number
 }
 
 export interface ShieldedSpendInputs {
@@ -90,9 +99,10 @@ export class ShieldedService {
     return scope != null ? repository.forScope(scope) : repository
   }
 
-  // Number of notes (commitment-tree leaves) the pool holds right now.
-  async getPoolTotal (): Promise<number> {
-    return Number(await this.sdk.shielded.getShieldedNotesCount() ?? 0n)
+  // Number of notes (commitment-tree leaves) the pool holds right now. Without a
+  // token id that is the credit pool; with one, that token's own pool.
+  async getPoolTotal (tokenId?: string): Promise<number> {
+    return Number(await this.sdk.shielded.getShieldedNotesCount(tokenId) ?? 0n)
   }
 
   // Where a scan that has seen `scanned` notes may start reading. Platform serves
@@ -108,11 +118,11 @@ export class ShieldedService {
   // Pages the pool from `start` to its end, preserving global leaf order so a
   // note's position in the returned array plus `start` is its leaf position.
   // `start` must be a chunk boundary — see `chunkStart`.
-  async fetchNotesFrom (start: number, total: number): Promise<ShieldedEncryptedNote[]> {
+  async fetchNotesFrom (start: number, total: number, tokenId?: string): Promise<ShieldedEncryptedNote[]> {
     const notes: ShieldedEncryptedNote[] = []
 
     for (let offset = start; offset < total; offset += SHIELDED_NOTES_PAGE_SIZE) {
-      const page = await this.sdk.shielded.getShieldedEncryptedNotes(BigInt(offset), SHIELDED_NOTES_PAGE_SIZE)
+      const page = await this.sdk.shielded.getShieldedEncryptedNotes(BigInt(offset), SHIELDED_NOTES_PAGE_SIZE, tokenId)
 
       if (page.length === 0) {
         break
@@ -126,10 +136,10 @@ export class ShieldedService {
 
   // The whole note set, in leaf order. Spends need it: witnessing the notes they
   // select happens against the full tree.
-  async fetchAllNotes (): Promise<ShieldedEncryptedNote[]> {
-    const total = await this.getPoolTotal()
+  async fetchAllNotes (tokenId?: string): Promise<ShieldedEncryptedNote[]> {
+    const total = await this.getPoolTotal(tokenId)
 
-    return total === 0 ? [] : await this.fetchNotesFrom(0, total)
+    return total === 0 ? [] : await this.fetchNotesFrom(0, total, tokenId)
   }
 
   // The wallet's own notes inside `notes`, as the SDK returns them. Spends work
@@ -144,13 +154,13 @@ export class ShieldedService {
   // read its balance nor spend. Queries in consecutive chunks, each with its own
   // verified proof. Results are matched by nullifier bytes downstream, never by
   // position, so concatenating the chunks is safe.
-  async nullifierStatuses (nullifiers: Uint8Array[]): Promise<ShieldedNullifierStatus[]> {
+  async nullifierStatuses (nullifiers: Uint8Array[], tokenId?: string): Promise<ShieldedNullifierStatus[]> {
     const statuses: ShieldedNullifierStatus[] = []
 
     for (let offset = 0; offset < nullifiers.length; offset += SHIELDED_NULLIFIER_QUERY_LIMIT) {
       const chunk = nullifiers.slice(offset, offset + SHIELDED_NULLIFIER_QUERY_LIMIT)
 
-      statuses.push(...await this.sdk.shielded.getShieldedNullifiers(chunk))
+      statuses.push(...await this.sdk.shielded.getShieldedNullifiers(chunk, tokenId))
     }
 
     return statuses
@@ -335,8 +345,8 @@ export class ShieldedService {
 
   // Reads the pool, recovers this wallet's notes and keeps the unspent ones.
   // `fromAddresses` restricts them to those source addresses.
-  async loadUnspentNotes (seed: Uint8Array, network: NetworkType, account: number, fromAddresses?: string[]): Promise<UnspentShieldedNotes> {
-    const allNotes = await this.fetchAllNotes()
+  async loadUnspentNotes (seed: Uint8Array, network: NetworkType, account: number, fromAddresses?: string[], tokenId?: string): Promise<UnspentShieldedNotes> {
+    const allNotes = await this.fetchAllNotes(tokenId)
     const recovered = this.recoverOwnNotes(allNotes, seed, account)
 
     if (recovered.length === 0) {
@@ -347,7 +357,7 @@ export class ShieldedService {
     // balance is computed. Uses each note's own nullifier, not the action leaf's,
     // so a note we already spent is excluded instead of being reselected and
     // rejected on-chain.
-    const statuses = await this.nullifierStatuses(recovered.map(note => this.noteNullifier(note)))
+    const statuses = await this.nullifierStatuses(recovered.map(note => this.noteNullifier(note)), tokenId)
     const spent = new Set(statuses.filter(status => status.isSpent).map(status => bytesToHex(status.nullifier)))
     const unspent = recovered.filter(note => !spent.has(bytesToHex(this.noteNullifier(note))))
 
@@ -380,6 +390,34 @@ export class ShieldedService {
     const nullifiers = selected.map(note => this.noteNullifier(note))
 
     return { spends, nullifiers, anchor, changeAddress, coinType: PLATFORM_ADDRESS_COIN_TYPE[network] }
+  }
+
+  // The inputs of a spend out of one token's pool: the notes covering `amount`,
+  // witnessed against that pool's commitment tree, and the change address. Unlike a
+  // credit spend nothing is reserved for the fee - the signing identity pays it - so
+  // the notes cover the amount exactly.
+  async prepareTokenSpend (seed: Uint8Array, network: NetworkType, account: number, amount: bigint, tokenId: string, fromAddresses?: string[]): Promise<ShieldedSpendInputs> {
+    const { allNotes, unspent } = await this.loadUnspentNotes(seed, network, account, fromAddresses, tokenId)
+
+    const { notes: selected } = selectTokenNotes(unspent, amount)
+    const { spends, anchor } = this.sdk.shielded.buildSpendableNotes(allNotes, selected)
+    const changeAddress = this.sdk.keyPair.deriveShieldedAddress(seed, network, account)
+    const nullifiers = selected.map(note => this.noteNullifier(note))
+
+    return { spends, nullifiers, anchor, changeAddress, coinType: PLATFORM_ADDRESS_COIN_TYPE[network] }
+  }
+
+  // What this wallet holds in one token's pool. Note-based like the credit balance:
+  // the pool's whole note set is read, trial-decrypted with the wallet's viewing key
+  // and filtered by spent nullifiers.
+  async tokenPoolBalance (seed: Uint8Array, network: NetworkType, account: number, tokenId: string): Promise<{ balance: bigint, spendableNotes: number }> {
+    const allNotes = await this.fetchAllNotes(tokenId)
+    const recovered = this.recoverOwnNotes(allNotes, seed, account)
+    const statuses = await this.nullifierStatuses(recovered.map(note => this.noteNullifier(note)), tokenId)
+
+    const { balance, spendableNotes } = this.sumUnspentValue(recovered, statuses, network)
+
+    return { balance, spendableNotes }
   }
 
   // An account with nothing stored yet: the shape callers get before the first
@@ -417,6 +455,107 @@ export class ShieldedService {
       total: await this.getPoolTotal(),
       updatedAt: Date.now()
     }
+  }
+
+  // Memo bytes for a token action. The credit actions hand their memo to
+  // sdk.shielded.createStateTransition, which normalizes it; the builder takes the
+  // bytes, so they are made here instead.
+  private memoBytes (memo?: string): Uint8Array {
+    return memo == null || memo === ''
+      ? ShieldedMemoWASM.empty().toBytes()
+      : ShieldedMemoWASM.fromString(memo).toBytes()
+  }
+
+  // The pool and the signing identity, which open every owner-signed token action.
+  private tokenPoolArguments (pool: ShieldedTokenPool, signer: ShieldedTokenSigner): [Uint8Array, Uint8Array, Uint8Array, number] {
+    return [
+      new IdentifierWASM(pool.tokenId).bytes(),
+      new IdentifierWASM(signer.ownerId).bytes(),
+      new IdentifierWASM(pool.dataContractId).bytes(),
+      pool.tokenContractPosition
+    ]
+  }
+
+  // Owner token balance -> the token's shielded pool.
+  //
+  // The three builders below are called directly: dash-platform-sdk 1.7.0-dev.3 wraps
+  // the credit pool actions in sdk.shielded.createStateTransition but not the contract
+  // bound token ones, so until that wrapper is released these are the same builder
+  // methods it will call, and this is the only place that changes when it lands.
+  async buildTokenShield (
+    pool: ShieldedTokenPool,
+    signer: ShieldedTokenSigner,
+    params: { recipient: OrchardAddressWASM, amount: bigint, memo?: string }
+  ): Promise<StateTransitionWASM> {
+    const builder = await this.sdk.shielded.getShieldedBuilder()
+
+    return StateTransitionWASM.fromBytes(await builder.tokenShield(
+      ...this.tokenPoolArguments(pool, signer),
+      params.recipient,
+      params.amount,
+      this.memoBytes(params.memo),
+      undefined,
+      signer.identityPublicKey.bytes(),
+      signer.privateKey.bytes(),
+      signer.identityContractNonce,
+      signer.userFeeIncrease
+    ))
+  }
+
+  // Token pool -> the recipient identity's token balance.
+  async buildTokenUnshield (
+    pool: ShieldedTokenPool,
+    signer: ShieldedTokenSigner,
+    context: ShieldedTokenSpendContext,
+    params: { recipientId: string, amount: bigint, memo?: string }
+  ): Promise<StateTransitionWASM> {
+    const builder = await this.sdk.shielded.getShieldedBuilder()
+    const { spend } = context
+
+    return StateTransitionWASM.fromBytes(await builder.tokenUnshield(
+      ...this.tokenPoolArguments(pool, signer),
+      spend.spends,
+      new IdentifierWASM(params.recipientId).bytes(),
+      params.amount,
+      spend.changeAddress,
+      context.seed,
+      spend.coinType,
+      context.account,
+      spend.anchor,
+      this.memoBytes(params.memo),
+      signer.identityPublicKey.bytes(),
+      signer.privateKey.bytes(),
+      signer.identityContractNonce,
+      signer.userFeeIncrease
+    ))
+  }
+
+  // Token pool -> token pool, the private transfer itself.
+  async buildTokenTransfer (
+    pool: ShieldedTokenPool,
+    signer: ShieldedTokenSigner,
+    context: ShieldedTokenSpendContext,
+    params: { recipient: OrchardAddressWASM, amount: bigint, memo?: string }
+  ): Promise<StateTransitionWASM> {
+    const builder = await this.sdk.shielded.getShieldedBuilder()
+    const { spend } = context
+
+    return StateTransitionWASM.fromBytes(await builder.tokenShieldedTransfer(
+      ...this.tokenPoolArguments(pool, signer),
+      spend.spends,
+      params.recipient,
+      params.amount,
+      spend.changeAddress,
+      context.seed,
+      spend.coinType,
+      context.account,
+      spend.anchor,
+      this.memoBytes(params.memo),
+      signer.identityPublicKey.bytes(),
+      signer.privateKey.bytes(),
+      signer.identityContractNonce,
+      signer.userFeeIncrease
+    ))
   }
 
   // The pool's memo field holds SHIELDED_MEMO_BYTES bytes, and the SDK refuses
