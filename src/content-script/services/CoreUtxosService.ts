@@ -5,15 +5,19 @@ import { CoreAddressChain } from '../../types/enums/CoreAddressChain'
 import { CoreAddressEntry, deriveCoreAddressesFromXpub } from '../../utils/coreAddresses'
 import { CoreExplorerService, CoreWalletUtxo } from './CoreExplorerService'
 
-export interface SpendableCoreUtxos {
+export interface OwnedCoreAddresses {
+  // Every address of the account the explorer has seen, plus the next free one
+  // on each chain - the extent that counts as "this wallet's own". Keyed by
+  // address, in derivation order: the receiving chain first, then change.
+  owned: Map<string, CoreAddressEntry>
+  nextUnused: Record<CoreAddressChain, number>
+}
+
+export interface SpendableCoreUtxos extends OwnedCoreAddresses {
   // What can be spent now. The explorer indexes the mempool, so a send made a
   // moment ago is already reflected: the outputs it consumed are gone from this
   // set and the change it paid us is in it.
   utxos: CoreWalletUtxo[]
-  // Every address of the account the explorer has seen, plus the next free one
-  // on each chain - the extent that counts as "this wallet's own".
-  owned: Map<string, CoreAddressEntry>
-  nextUnused: Record<CoreAddressChain, number>
 }
 
 /**
@@ -30,13 +34,12 @@ export class CoreUtxosService {
     this.coreExplorer = coreExplorer
   }
 
-  // `addresses` narrows the read to some of the wallet's own addresses; without
-  // it the whole account is read. An address the account does not derive is
-  // refused: there is no key to sign its outputs with, so listing them could
-  // only lead to a transaction nobody can sign.
-  async spendable (wallet: Wallet, xpub: string, account: number = 0, addresses?: string[]): Promise<SpendableCoreUtxos> {
-    const network = wallet.network as NetworkType
-    const { nextUnused } = await this.coreExplorer.getXpubSummary(xpub, network)
+  // Which addresses of the account exist at all. One explorer round trip: the
+  // gap scan says how far the account reaches, and the addresses themselves are
+  // always derived locally from the xpub, because an explorer that returned
+  // them directly could hand back one the wallet does not own.
+  async ownedAddresses (wallet: Wallet, xpub: string, account: number = 0): Promise<OwnedCoreAddresses> {
+    const { nextUnused } = await this.coreExplorer.getXpubSummary(xpub, wallet.network as NetworkType)
 
     const owned = new Map<string, CoreAddressEntry>()
 
@@ -45,6 +48,17 @@ export class CoreUtxosService {
         owned.set(entry.address, entry)
       }
     }
+
+    return { owned, nextUnused }
+  }
+
+  // `addresses` narrows the read to some of the wallet's own addresses; without
+  // it the whole account is read. An address the account does not derive is
+  // refused: there is no key to sign its outputs with, so listing them could
+  // only lead to a transaction nobody can sign.
+  async spendable (wallet: Wallet, xpub: string, account: number = 0, addresses?: string[]): Promise<SpendableCoreUtxos> {
+    const network = wallet.network as NetworkType
+    const { owned, nextUnused } = await this.ownedAddresses(wallet, xpub, account)
 
     for (const address of addresses ?? []) {
       if (!owned.has(address)) {

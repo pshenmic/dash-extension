@@ -34,6 +34,7 @@ import { RemoveIdentityPrivateKeyHandler } from './private/identities/removePriv
 import { GetAllAppConnectsHandler } from './private/appConnect/getAllAppConnects'
 import { RemoveAppConnectHandler } from './private/appConnect/removeAppConnect'
 import { SetAppConnectIdentitiesHandler } from './private/appConnect/setAppConnectIdentities'
+import { SetAppConnectAddressesHandler } from './private/appConnect/setAppConnectAddresses'
 import { ExportPrivateKeyHandler } from './private/identities/exportPrivateKey'
 import { RegisterUsernameHandler } from './private/identities/registerUsername'
 import { ImportMasternodeIdentityHandler } from './private/identities/importMasternodeIdentity'
@@ -215,9 +216,10 @@ export class PrivateAPI extends MessageDispatcher {
       [MessagingMethods.GET_APP_CONNECT]: new GetAppConnectHandler(appConnectRepository),
       [MessagingMethods.GET_ALL_APP_CONNECTS]: new GetAllAppConnectsHandler(appConnectRepository),
       [MessagingMethods.REMOVE_APP_CONNECT]: new RemoveAppConnectHandler(appConnectRepository),
-      [MessagingMethods.APPROVE_APP_CONNECT]: new ApproveAppConnectHandler(appConnectRepository, identitiesRepository),
+      [MessagingMethods.APPROVE_APP_CONNECT]: new ApproveAppConnectHandler(appConnectRepository, identitiesRepository, walletRepository, coreUtxos),
       [MessagingMethods.REJECT_APP_CONNECT]: new RejectAppConnectHandler(appConnectRepository),
       [MessagingMethods.SET_APP_CONNECT_IDENTITIES]: new SetAppConnectIdentitiesHandler(appConnectRepository, identitiesRepository),
+      [MessagingMethods.SET_APP_CONNECT_ADDRESSES]: new SetAppConnectAddressesHandler(appConnectRepository, walletRepository, coreUtxos),
       [MessagingMethods.REGISTER_USERNAME]: new RegisterUsernameHandler(identitiesRepository, walletRepository, keypairRepository, this.sdk),
       [MessagingMethods.CREATE_STATE_TRANSITION]: new CreateStateTransitionHandler(stateTransitionsRepository),
       [MessagingMethods.CREATE_IDENTITY_PRIVATE_KEY]: new CreateIdentityPrivateKeyHandler(walletRepository, identitiesRepository, keypairRepository, this.storageAdapter, stateTransitionsRepository, this.sdk),
